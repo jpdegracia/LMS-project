@@ -1,0 +1,78 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # Change this to 'master' if your default branch is named master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # --- 1. BUILD SERVER ---
+      - name: Build and Push Server
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile.server   # <--- Uses your custom filename
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/careerlab-server:latest
+
+      # --- 2. BUILD CLIENT ---
+      - name: Build and Push Client
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile.client   # <--- Uses your custom filename
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/careerlab-client:latest
+          # This injects the EC2 IP into Vite during the build
+          build-args: |
+            VITE_BACKEND_URL=http://${{ secrets.EC2_HOST }}:4000
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. Stop and remove old containers (ignore errors if they don't exist)
+            docker stop careerlab-client careerlab-server || true
+            docker rm careerlab-client careerlab-server || true
+            
+            # 2. Pull the latest images we just pushed
+            docker pull ${{ secrets.DOCKER_USERNAME }}/careerlab-server:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/careerlab-client:latest
+            
+            # 3. Create a bridge network so they can talk to each other
+            docker network create careerlab-net || true
+
+            # 4. Start Server
+            # We mount the .env file from your EC2 /home/ubuntu/.env into the container
+            docker run -d \
+              --name careerlab-server \
+              --network careerlab-net \
+              -p 4000:4000 \
+              --env-file /home/${{ secrets.EC2_USER }}/.env \
+              ${{ secrets.DOCKER_USERNAME }}/careerlab-server:latest
+
+            # 5. Start Client
+            docker run -d \
+              --name careerlab-client \
+              --network careerlab-net \
+              -p 80:80 \
+              ${{ secrets.DOCKER_USERNAME }}/careerlab-client:latest

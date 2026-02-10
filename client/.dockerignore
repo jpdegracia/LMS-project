@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build Outputs (We want Docker to build fresh, not use your local build)
+dist
+build
+
+# Git files
+.git
+.gitignore
+
+# Secrets
+.env
+
+# Docker files
+Dockerfile.client
+.dockerignore
+
+# NOTE: Do NOT ignore nginx.conf because we need to COPY it!
+
+# IDE/Editor settings
+.vscode
+.idea

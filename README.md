@@ -1,2 +1,2 @@
-# LMS-oroject
+# LMS-project
 personal project

@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules
+npm-debug.log
+
+# Git files
+.git
+.gitignore
+
+# Secrets (CRITICAL: Never copy these into the image)
+.env
+
+# Docker files (We don't need the recipe inside the cake)
+Dockerfile.server
+.dockerignore
+docker-compose.yml
+
+# IDE/Editor settings (Optional but recommended)
+.vscode
+.idea

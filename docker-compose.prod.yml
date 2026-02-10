@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.server
+      target: production
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./server/.env # 👈 Loads the DUMMY string from your laptop file
+    depends_on:
+      - mongo_db
+    volumes:
+      - ./server:/app # 👈 Syncs code changes instantly (Hot Reload)
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Force polling for file changes
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.client
+      target: development # 👈 This tells Docker to stop at Stage 2
+    ports:
+      - "5173:5173" # 👈 Map Vite's dev port
+    volumes:
+      - ./client:/app         # 👈 Syncs your laptop code to the container
+      - /app/node_modules     # Keeps container modules separate
+    environment:
+      - VITE_API_URL=http://localhost:4000
+      - CHOKIDAR_USEPOLLING=true 
+    depends_on:
+      - server
+
+  mongo_db:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - local_dev_db:/data/db
+
+volumes:
+  local_dev_db:

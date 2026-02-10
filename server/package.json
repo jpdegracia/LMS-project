@@ -1,0 +1,35 @@
+{
+  "name": "thecareerlab",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "he": "^1.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "katex": "^0.16.25",
+    "mailtrap": "^4.1.0",
+    "mongoose": "^8.15.0",
+    "multer": "^2.0.1",
+    "nodemailer": "^6.10.1",
+    "striptags": "^3.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

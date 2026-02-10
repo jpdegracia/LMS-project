@@ -1,0 +1,252 @@
+@import "tailwindcss";
+
+@theme {
+  --font-primary: "Lato", sans-serif;
+  --font-secondary: "Inter", sans-serif;
+  --breakpoint-3xl: 120rem;
+  --color-avocado-100: oklch(0.99 0 0);
+  --color-avocado-200: oklch(0.98 0.04 113.22);
+  --color-avocado-300: oklch(0.94 0.11 115.03);
+  --color-avocado-400: oklch(0.92 0.19 114.08);
+  --color-avocado-500: oklch(0.84 0.18 117.33);
+  --color-avocado-600: oklch(0.53 0.12 118.34);
+  --ease-fluid: cubic-bezier(0.3, 0, 0, 1);
+  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+  /* ... */
+}
+
+
+.container {
+  width: 100%;
+  max-width: 100%;
+  /* background: linear-gradient(to right, #a7d9f2, #d1edf2); Sky Blue to Pale Aqua */
+}
+
+
+
+.transition-dropdown {
+  opacity: 0;
+  transform: translateY(-10px);
+  transform-origin: top right;
+  transition: opacity 250ms ease, transform 250ms ease;
+  pointer-events: none;
+}
+
+.transition-dropdown.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+
+@media (min-width: 640px) {
+  .container {
+    width: 100vw;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    width: 100vw;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container {
+    width: 100%;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 200s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.marquee:hover {
+  animation-play-state: paused;
+}
+
+
+
+
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to left, rgba(12, 11, 11, 0.7), rgba(0, 0, 0, 0.7));
+  z-index: 1;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 10;
+}
+
+.annotator-container {
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.tag-selector {
+  margin-bottom: 20px;
+}
+
+/* This makes the text much easier to select */
+.annotator-text {
+  font-size: 1.25rem;
+  line-height: 2.5; /* IMPORTANT: Extra space for highlights */
+}
+
+.annotation-data {
+  background-color: #f4f4f4;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 20px;
+}
+
+/* --- Custom Scrollbar for Sidebar --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px; /* Thinner width to prevent overlapping text */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155; /* Matches slate-700 */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #475569; /* Matches slate-600 */
+}
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+
+  @layer components {
+    .title-head {
+      @apply text-cyan-400 text-[22px] flex gap-2 items-center font-bold;
+    }
+    .title-pic {
+      @apply ml-5 h-12 w-45 bg-white border-blue-50;
+    }
+    .title-text {
+      @apply text-gray-100 text-[14px] font-primary flex items-center gap-x-20 font-extrabold;
+    }
+    .title-text a {
+      @apply inline-block py-1 px-3 font-semibold mx-auto;
+    }
+    .btn-a {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-orange-600 hover:bg-blue-400 hover:text-white hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-b {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-blue-600 hover:bg-yellow-400 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-create {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-blue-600 hover:bg-green-400 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-cancel {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-gray-400 hover:bg-orange-400 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-view {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-green-600 hover:bg-green-700 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-delete {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-red-600 hover:bg-red-700 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-delete-2 {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-red-600 hover:bg-red-700 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-edit {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-indigo-500 hover:bg-indigo-700 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-change {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-purple-500 hover:bg-purple-700 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-quiz-previous {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-blue-500 hover:bg-green-600 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-quiz-next {
+      @apply items-center px-4 py-1.5 rounded-md text-[14px] uppercase font-semibold text-white bg-blue-500 hover:bg-green-600 hover:text-black hidden md:block focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+    }
+    .btn-outline {
+      @apply items-center rounded-xl text-[14px] font-medium text-white border-white border p-2
+    }
+    .menu {
+      @apply text-4xl;
+    }
+    .h1 {
+      @apply text-xl font-primary text-white lg:text-2xl font-bold !leading-snug;
+    }
+    .h2 {
+      @apply text-center text-2xl font-bold font-secondary text-gray-700 uppercase;
+    }
+    .arrow {
+      @apply text-xl group-hover:translate-x-2 group-hover:-rotate-45 duration-300;
+    }
+    .form {
+      @apply w-full rounded-xl border border-gray-400 bg-white px-4 py-2 text-gray-700 focus:ring-2 focus:ring-blue-500 font-secondary focus:outline-none;
+    }
+    .navbar-2 {
+      @apply container mx-auto hidden md:flex items-center bg-orange-100 border-b rounded-xl border-gray-300 p-1 justify-center uppercase my-2;
+    }
+    .page-wrapper {
+      @apply flex flex-col min-h-screen bg-white dark:bg-black overflow-hidden;
+    }
+    .sidebar-main-text-1 {
+      @apply relative flex items-center p-3 rounded-lg text-gray-200 text-[15px] font-primary hover:bg-gray-700 transition-colors duration-200 ease-in-out cursor-pointer mb-2;
+    }
+
+    .sidebar-main-text-1:hover .sidebar-tooltip {
+      @apply opacity-100 visible;
+    }
+
+    .sidebar-main-text-2 {
+      @apply relative flex items-center p-2 rounded-lg text-gray-300 font-secondary hover:bg-gray-600 transition-colors duration-200 ease-in-out cursor-pointer text-sm mb-1;
+    }
+
+    .sidebar-main-text-2:hover .sidebar-tooltip {
+      @apply opacity-100 visible;
+    }
+    
+    .container-2 {
+      @apply mx-auto max-w-[100rem] px-4 sm:px-6 lg:px-8;
+    }
+    .container-3 {
+      @apply mx-auto max-w-7xl;
+    }
+    .container-4 {
+      @apply mx-auto max-w-[105rem] px-4 sm:px-6 lg:px-8;
+    }
+
+    .container-player {
+      @apply mx-auto w-[95%] max-w-7xl flex-1 flex flex-col;
+    }
+  }
+  

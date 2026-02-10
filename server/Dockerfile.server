@@ -1,0 +1,45 @@
+# ----------------------------
+# STAGE 1: Builder (Install all dependencies)
+# ----------------------------
+FROM node:18-alpine AS builder
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package files first to leverage Docker caching
+COPY package*.json ./
+
+# Install ALL dependencies (including dev tools if you have them)
+RUN npm ci
+
+# ----------------------------
+# STAGE 2: Production Runner
+# ----------------------------
+FROM node:18-alpine AS production
+
+# Set working directory
+WORKDIR /app
+
+# Set NODE_ENV to production to optimize Express
+ENV NODE_ENV=production
+
+# Copy package files again
+COPY package*.json ./
+
+# Install ONLY production dependencies (cleaner and smaller image)
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy the rest of your server code
+# We do this last so changes to code don't force a re-install of npm packages
+COPY . .
+
+RUN mkdir -p uploads && chown -R node:node /app
+
+# Expose port 4000 (Matching your index.js)
+EXPOSE 4000
+
+# Run as non-root user for security
+USER node
+
+# Start the server
+CMD ["npm", "run", "start"]
