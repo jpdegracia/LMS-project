@@ -1,42 +1,47 @@
 import React from 'react'
 import Navbar from '../Navbar/Navbar';
 import Footer from '../Footer/Footer';
+import { motion } from 'framer-motion'
 
-const PracticeExam = () => {
+
+
+const PracticeExamNav = () => {
+  const exams = [
+    { id: 1, title: "Entrance Prep", description: "Comprehensive sample exam for incoming freshmen." },
+    { id: 2, title: "Career Placement", description: "Assessment for specialized career lab tracks." }
+  ];
+
   return (
-    <div>
+    <div className='bg-slate-800/80'>
     <Navbar />
-    <section className=' rounded-2xl bg-blend-color mx-4'>
-
-      <div className="text-center mb-10">
-        <div className="inline-block bg-orange-600 px-6 py-2 rounded shadow-lg mt-6">
-          <h2 className="font-secondary h2 text-white text-xl uppercase">Practice Exam:</h2>
-        </div>
+    <section className="py-20 px-4 max-w-7xl mx-auto ">
+      <div className="text-center mb-16">
+        <h2 className="text-4xl font-bold text-white uppercase tracking-tighter">
+          Ready to <span className="text-yellow-500">Test Your Skills?</span>
+        </h2>
+        <div className="h-1 w-20 bg-orange-600 mx-auto mt-4 rounded-full"></div>
       </div>
 
-      <div className="flex justify-center gap-8 mb-10">
-
-        {/* Card 1 */}
-
-        <div className="bg-white p-6 rounded-2xl shadow w-64 mb-10">
-          <h3 className="font-bold mb-2">Card 1</h3>
-          <p className="mb-1"><strong>Course:</strong> Sample Exam</p>
-          <p className="mb-4 text-sm">This is a short description of the practice exam.</p>
-          <button className="btn-b font-secondary font-normal">
-            Enroll
-          </button>
-        </div>
-
-        {/* Card 2 */}
-
-        <div className="bg-white p-6 rounded-2xl shadow w-64 mb-10">
-          <h3 className="font-bold mb-2">Card 2</h3>
-          <p className="mb-1"><strong>Course:</strong> Sample Exam</p>
-          <p className="mb-4 text-sm">This is a short description of the practice exam.</p>
-          <button className="btn-b font-secondary font-normal">
-            Enroll
-          </button>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+        {exams.map((exam) => (
+          <motion.div 
+            key={exam.id}
+            whileHover={{ y: -10 }}
+            className="bg-slate-800/50 border border-slate-700 p-8 rounded-3xl shadow-2xl backdrop-blur-md w-full max-w-sm relative overflow-hidden group"
+          >
+            {/* Decorative background glow */}
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-colors" />
+            
+            <h3 className="text-2xl font-bold text-white mb-3">{exam.title}</h3>
+            <p className="text-slate-400 mb-6 leading-relaxed">
+              {exam.description}
+            </p>
+            
+            <button className="w-full py-3 bg-white hover:bg-yellow-500 text-slate-900 font-bold rounded-xl transition-all duration-300">
+              Enroll Now
+            </button>
+          </motion.div>
+        ))}
       </div>
     </section>
     <Footer />
@@ -44,4 +49,4 @@ const PracticeExam = () => {
   );
 }
 
-export default PracticeExam;
+export default PracticeExamNav;

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlineBadgeCheck, HiEye, HiEyeOff } from 'react-icons/hi';
 import Navbar from '../Navbar/Navbar';
 import Footer from '../Footer/Footer';
 import UserContext from '../UserContext/UserContext';
@@ -13,14 +15,9 @@ const Register = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [IDnumber, setIDnumber] = useState('');
-    // Role is fixed to 'student' and not user-selectable
-    const [roleName, setRoleName] = useState('student'); // Default and fixed to 'student'
     const [showPassword, setShowPassword] = useState(false);
-
     const [errors, setErrors] = useState({});
     const [emailSentMessage, setEmailSentMessage] = useState('');
-    const [registrationAttempted, setRegistrationAttempted] = useState(false);
-
     const [isActive, setIsActive] = useState(false);
 
     useEffect(() => {
@@ -28,302 +25,155 @@ const Register = () => {
     }, [firstName, lastName, email, password]);
 
     useEffect(() => {
-        if (user?.id) {
-            navigate('/dashboard');
-        }
+        if (user?.id) navigate('/dashboard');
     }, [user?.id, navigate]);
-
-    useEffect(() => {
-        if (registrationAttempted) {
-            const timer = setTimeout(() => {
-                setEmailSentMessage('');
-                setErrors({});
-                setRegistrationAttempted(false);
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [registrationAttempted]);
-
-
-    const validateForm = () => {
-        let isValid = true;
-        const newErrors = {};
-
-        if (!firstName.trim()) {
-            newErrors.firstName = 'First Name is required.';
-            isValid = false;
-        }
-        if (!lastName.trim()) {
-            newErrors.lastName = 'Last Name is required.';
-            isValid = false;
-        }
-        if (!email.trim()) {
-            newErrors.email = 'Email is required.';
-            isValid = false;
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = 'Invalid email address';
-            isValid = false;
-        }
-
-        if (!password) {
-            newErrors.password = 'Password is required.';
-            isValid = false;
-        } else if (password.length < 8) {
-            newErrors.password = 'Password must be at least 8 characters long';
-            isValid = false;
-        }
-
-        // Role validation check: Ensure it's not empty (which it won't be since it's hardcoded)
-        if (!roleName.trim()) {
-            newErrors.roleName = 'Role is required.'; 
-            isValid = false;
-        } 
-        // No need for 'student', 'teacher', 'admin' check here since it's fixed.
-        // The backend will enforce what's allowed.
-
-        setErrors(newErrors);
-        return isValid;
-    };
 
     const registerUser = async (e) => {
         e.preventDefault();
-        setRegistrationAttempted(true);
-        setEmailSentMessage('');
         setErrors({});
-
-        if (!validateForm()) {
-            return;
-        }
+        setEmailSentMessage('');
 
         try {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/register`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    firstName,
-                    lastName,
-                    email,
-                    password,
-                    IDnumber,
-                    roleName: roleName.toLowerCase(), // Always send 'student'
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstName, lastName, email, password, IDnumber, roleName: 'student' }),
             });
 
             const data = await response.json();
-
             if (response.ok && data.success) {
-                setEmailSentMessage(`An email has been sent to ${email} to verify your account. Please check your inbox and spam folder.`);
-                setFirstName('');
-                setLastName('');
-                setEmail('');
-                setPassword('');
-                setIDnumber('');
-                setRoleName('student'); // Reset to default student role (redundant but harmless)
-
+                setEmailSentMessage(`Verification email sent to ${email}.`);
+                // Clear fields
+                setFirstName(''); setLastName(''); setEmail(''); setPassword(''); setIDnumber('');
             } else {
-                setEmailSentMessage('');
-                if (data.message) {
-                    if (data.message.includes("Email already exists")) {
-                        setErrors(prevErrors => ({ ...prevErrors, email: data.message }));
-                    } else if (data.message.includes("Password must be at least 8 characters long")) {
-                        setErrors(prevErrors => ({ ...prevErrors, password: data.message }));
-                    } else if (data.message.includes("Role")) { // Catch backend role errors
-                        setErrors(prevErrors => ({ ...prevErrors, roleName: data.message }));
-                    } else {
-                        setErrors(prevErrors => ({ ...prevErrors, general: data.message }));
-                    }
-                } else {
-                    setErrors({ general: 'Registration failed. Please try again.' });
-                }
+                setErrors({ general: data.message || 'Registration failed.' });
             }
         } catch (error) {
-            console.error('Error during registration:', error);
-            setEmailSentMessage('');
-            setErrors({ general: 'A network error occurred. Please try again later.' });
+            setErrors({ general: 'Network error. Please try again.' });
         }
     };
 
     return (
-        <section>
+        <section className="min-h-screen bg-slate-900 flex flex-col">
             <Navbar />
-
-            <div className="mt-20 mb-20 flex justify-center rounded-3xl border border-black bg-white drop-shadow-2xl p-8 max-w-xl mx-auto">
-                <form onSubmit={registerUser} className="w-full space-y-6">
-                    <h2 className="text-center text-3xl form-secondary font-bold text-gray-700">Sign up with email</h2>
-                    <p className="text-center font-normal form-secondary text-gray-700">
-                        Learn on your own time from top universities and businesses.
-                    </p>
-
-                    {errors.general && <p className="text-red-500 text-center">{errors.general}</p>}
-                    {emailSentMessage && (
-                        <p className="text-green-600 text-center font-semibold animate-fade-in-down">
-                            {emailSentMessage}
-                        </p>
-                    )}
-
-                    {/* First Name */}
-                    <div>
-                        <label htmlFor="firstName" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                            First Name: <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="firstName"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="Enter your first name"
-                            className={`form ${errors.firstName ? 'border-red-500' : ''}`}
-                            required
-                        />
-                        {errors.firstName && <p className="text-red-500 text-xs italic">{errors.firstName}</p>}
+            
+            <main className="flex-grow flex items-center justify-center py-20 px-4">
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="w-full max-w-2xl bg-slate-800/50 backdrop-blur-xl border border-slate-700 p-8 md:p-12 rounded-[2.5rem] shadow-2xl"
+                >
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl font-black text-white tracking-tighter mb-2">Join the Guru</h2>
+                        <p className="text-slate-400">Exceptional people nurturing exceptional people.</p>
                     </div>
 
-                    {/* Last Name */}
-                    <div>
-                        <label htmlFor="lastName" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                            Last Name: <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="lastName"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Enter your last name"
-                            className={`form ${errors.lastName ? 'border-red-500' : ''}`}
-                            required
-                        />
-                        {errors.lastName && <p className="text-red-500 text-xs italic">{errors.lastName}</p>}
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                            Email: <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="sample@mail.com"
-                            className={`form ${errors.email ? 'border-red-500' : ''}`}
-                            required
-                        />
-                        {errors.email && <p className="text-red-500 text-xs italic">{errors.email}</p>}
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                            Password: <span className="text-red-500">*</span>
-                        </label>
-                        <p className="text-sm text-gray-300 form-secondary mb-1">Minimum of 8 characters</p>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Create password"
-                                className={`form ${errors.password ? 'border-red-500' : ''} pr-10`}
-                                required
-                            />
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 cursor-pointer">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                >
-                                    {showPassword ? (
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    ) : (
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                        />
-                                    )}
-                                </svg>
+                    <form onSubmit={registerUser} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* First Name */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-300 ml-1">First Name</label>
+                                <div className="relative">
+                                    <HiOutlineUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg" />
+                                    <input 
+                                        type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                                        className="form-input !pl-12" placeholder="First Name" required 
+                                    />
+                                </div>
+                            </div>
+                            {/* Last Name */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-300 ml-1">Last Name</label>
+                                <div className="relative">
+                                    <HiOutlineUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg" />
+                                    <input 
+                                        type="text" value={lastName} onChange={(e) => setLastName(e.target.value)}
+                                        className="form-input !pl-12" placeholder="Last Name" required 
+                                    />
+                                </div>
                             </div>
                         </div>
-                        {errors.password && <p className="text-red-500 text-xs italic">{errors.password}</p>}
-                    </div>
 
-                    {/* ID Number - Keep as optional, potentially disabled */}
-                    <div>
-                        <label htmlFor="IDnumber" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                            ID Number:
-                        </label>
-                        <input
-                            type="text"
-                            id="IDnumber"
-                            value={IDnumber}
-                            onChange={(e) => setIDnumber(e.target.value)}
-                            placeholder="Enter your ID number (optional)"
-                            className="form"
-                            // disabled // Keep disabled if you don't want users to fill it
-                        />
-                        {errors.IDnumber && <p className="text-red-500 text-xs italic">{errors.IDnumber}</p>}
-                    </div>
+                        {/* Email */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-300 ml-1">Email Address</label>
+                            <div className="relative">
+                                <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg" />
+                                <input 
+                                    type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                                    className="form-input !pl-12" placeholder="jane@example.com" required 
+                                />
+                            </div>
+                        </div>
 
-                    {/* Role Display - Fixed to Student */}
-                    <div>
-                        <label htmlFor="roleName" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                            Role: <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="roleName"
-                            value="Student" // Fixed value display
-                            className={`form ${errors.roleName ? 'border-red-500' : ''}`}
-                            disabled // Make it read-only
-                            required // Still required for form submission
-                        />
-                        {errors.roleName && <p className="text-red-500 text-xs italic">{errors.roleName}</p>}
-                    </div>
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-300 ml-1">Password (8+ characters)</label>
+                            <div className="relative">
+                                <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg" />
+                                <input 
+                                    type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                                    className="form-input !pl-12 !pr-12" placeholder="••••••••" required 
+                                />
+                                <button 
+                                    type="button" onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                                >
+                                    {showPassword ? <HiEyeOff /> : <HiEye />}
+                                </button>
+                            </div>
+                        </div>
 
-                    <button
-                        type="submit"
-                        className={`mt-4 w-full text-white rounded-2xl py-2 font-semibold transition duration-300 ${
-                            isActive ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-                        }`}
-                        disabled={!isActive}
-                    >
-                        Agree & Join
-                    </button>
+                        {/* Role (Read Only) */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-300 ml-1">Account Type</label>
+                            <div className="relative">
+                                <HiOutlineBadgeCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400 text-lg" />
+                                <input 
+                                    type="text" value="Student" disabled 
+                                    className="form-input !pl-12 bg-slate-900/80 border-cyan-500/30 text-cyan-400 font-bold" 
+                                />
+                            </div>
+                        </div>
 
-                    <div className="mt-4 text-sm text-gray-700">
-                        <label className="inline-flex items-start space-x-2">
-                            <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded" required/>
-                            <span>
-                                By signing up, you agree to our{' '}
-                                <Link to="#" className="form-secondary text-blue-700 underline hover:text-blue-900">Terms of Use</Link> and{' '}
-                                <Link to="#" className="form-secondary text-blue-700 underline hover:text-blue-900">Privacy Policy</Link>.
-                            </span>
-                        </label>
-                    </div>
+                        {/* Error/Success Messages */}
+                        <AnimatePresence>
+                            {(errors.general || emailSentMessage) && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className={`text-center text-sm font-bold p-3 rounded-xl ${errors.general ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}
+                                >
+                                    {errors.general || emailSentMessage}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                    <div className="text-center mt-6">
-                        <p className="text-[18px] form-secondary">
-                            Already have an account?{' '}
-                            <Link to="/login" className="text-blue-700 form-secondary underline hover:text-blue-900 font-bold ml-1">
-                                Login
-                            </Link>
+                        <motion.button
+                            whileHover={isActive ? { scale: 1.02 } : {}}
+                            whileTap={isActive ? { scale: 0.98 } : {}}
+                            type="submit"
+                            disabled={!isActive}
+                            className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-all duration-300 ${isActive ? 'bg-cyan-500 text-slate-900 shadow-lg shadow-cyan-500/20 hover:bg-cyan-400' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                        >
+                            Agree & Join
+                        </motion.button>
+
+                        <p className="text-center text-slate-500 text-xs px-8 leading-relaxed">
+                            By joining, you agree to our <Link to="#" className="text-slate-300 underline">Terms of Use</Link> and <Link to="#" className="text-slate-300 underline">Privacy Policy</Link>.
                         </p>
-                    </div>
-                </form>
-            </div>
+
+                        <div className="text-center border-t border-slate-700/50 pt-6">
+                            <p className="text-slate-400">
+                                Already have an account? 
+                                <Link to="/login" className="text-cyan-400 font-bold ml-2 hover:underline">Login</Link>
+                            </p>
+                        </div>
+                    </form>
+                </motion.div>
+            </main>
 
             <Footer />
         </section>

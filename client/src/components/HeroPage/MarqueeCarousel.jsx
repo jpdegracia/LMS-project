@@ -43,23 +43,23 @@ const MarqueeCarousel = () => {
         key={i}
         src={src}
         alt={`carousel image ${i + 1}`}
-        className="h-32 md:h-48 w-auto rounded-md"
+        className="h-28 md:h-40 w-auto rounded-xl grayscale hover:grayscale-0 transition-all duration-500 cursor-pointer object-contain px-4"
         loading="lazy"
       />
     ));
 
   return (
-    <section>
-      <div className="text-center mb-5">
-        <div className="inline-block bg-orange-600 px-6 py-2 rounded shadow mt-6">
-          <h2 className="font-secondary h2 text-white text-xl">Admissions:</h2>
-        </div>
+    <section className="py-12 bg-slate-900/50">
+      <div className="text-center mb-8">
+        <span className="text-cyan-400 font-bold tracking-widest uppercase text-sm">Our Network</span>
+        <h2 className="text-3xl font-bold text-white mt-2">Admissions & Partners</h2>
       </div>
 
-      <div className="overflow-hidden border bg-white border-gray-200 rounded-lg shadow-lg my-4 mx-4">
-        <div className="animate-marquee gap-5 marquee m-10">
+      {/* The "Fade" mask is achieved with a radial gradient or absolute divs */}
+      <div className="relative overflow-hidden flex items-center bg-white/5 py-8 backdrop-blur-sm">
+        <div className="animate-marquee flex items-center whitespace-nowrap min-w-full">
           {renderImages(images)}
-          {renderImages(images)} {/* for seamless scroll */}
+          {renderImages(images)}
         </div>
       </div>
     </section>

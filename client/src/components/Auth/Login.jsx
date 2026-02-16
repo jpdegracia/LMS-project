@@ -1,6 +1,8 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner'; // Import Sonner
+import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import { HiOutlineMail, HiOutlineLockClosed, HiEye, HiEyeOff, HiChevronRight } from 'react-icons/hi';
 import Footer from '../Footer/Footer';
 import Navbar from '../Navbar/Navbar';
 import UserContext from '../UserContext/UserContext';
@@ -15,18 +17,13 @@ const Login = () => {
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
 
-    // Redirection logic for users already logged in
+    // Redirection Logic
     useEffect(() => {
         if (isLoggedIn && !loading) {
-            if (hasRole('admin')) {
-                navigate('/admin/dashboard', { replace: true });
-            } else if (hasRole('teacher')) {
-                navigate('/teacher/dashboard', { replace: true });
-            } else if (hasRole('student')) {
-                navigate('/courses', { replace: true });
-            } else {
-                navigate('/dashboard', { replace: true }); 
-            }
+            if (hasRole('admin')) navigate('/admin/dashboard', { replace: true });
+            else if (hasRole('teacher')) navigate('/teacher/dashboard', { replace: true });
+            else if (hasRole('student')) navigate('/courses', { replace: true });
+            else navigate('/dashboard', { replace: true });
         }
     }, [isLoggedIn, loading, hasRole, navigate]);
 
@@ -37,130 +34,124 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // 1. Validation Toast
         if (email && !/\S+@\S+\.\S+/.test(email)) {
             toast.error('Please enter a valid email address.');
             return;
         }
 
         setSubmitting(true);
-        
-        // 2. The Login Promise
-        // We use toast.promise to handle the loading, success, and error states automatically
         const loginPromise = login(email, password);
 
         toast.promise(loginPromise, {
             loading: 'Authenticating...',
-            success: (loginSuccess) => {
-                if (loginSuccess) {
-                    return 'Welcome back!';
-                } else {
-                    // This handles cases where login() returns false instead of throwing
-                    throw new Error("Login failed"); 
-                }
-            },
+            success: (success) => success ? 'Welcome back!' : 'Login failed',
             error: (err) => {
-                // Determine the error message based on your context logic
-                if (contextError?.toLowerCase().includes('not verified')) {
-                    return 'Your email is not verified. Please check your inbox.';
-                }
-                if (contextError?.toLowerCase().includes('invalid credentials')) {
-                    return 'Incorrect email or password.';
-                }
-                return contextError || 'An error occurred during login.';
+                if (contextError?.toLowerCase().includes('not verified')) return 'Email not verified.';
+                if (contextError?.toLowerCase().includes('invalid credentials')) return 'Incorrect email or password.';
+                return contextError || 'Login error.';
             },
         });
 
-        const loginSuccess = await loginPromise;
+        await loginPromise;
         setSubmitting(false);
-
-        // 3. Post-Login Redirection
-        if (loginSuccess) { 
-            if (hasRole('admin')) {
-                navigate('/admin/dashboard', { replace: true });
-            } else if (hasRole('teacher')) {
-                navigate('/teacher/dashboard', { replace: true });
-            } else if (hasRole('student')) {
-                navigate('/courses', { replace: true });
-            } 
-        }
     };
 
     return (
-        <section className="min-h-screen flex flex-col">
+        <section className="min-h-screen bg-slate-950 flex flex-col overflow-hidden">
             <Navbar />
-            <div className="flex-grow flex items-center justify-center py-10 px-4">
-                <div className="rounded-3xl border border-black bg-white drop-shadow-2xl p-8 max-w-lg w-full">
-                    <form onSubmit={handleSubmit} className="w-full space-y-6">
-                        <h2 className="text-center text-3xl form-secondary font-bold text-gray-700">Welcome Back!</h2>
+            
+            <main className="flex-grow flex items-center justify-center py-20 px-4 relative">
+                {/* Background Glow Effect */}
+                <div className="absolute w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-                        {/* Note: I removed the contextError <p> tag here because 
-                            the toast now handles the error display globally. */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full max-w-lg bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl z-10"
+                >
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl font-black text-white tracking-tighter mb-2">
+                            Welcome Back
+                        </h2>
+                        <p className="text-slate-400 text-sm font-medium">Log in to your account.</p>
+                    </div>
 
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                                Email: <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                id="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="form mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium form-secondary text-gray-700 mb-1">
-                                Password: <span className="text-red-500">*</span>
-                            </label>
+                    <form onSubmit={handleSubmit} className="space-y-2">
+                        {/* Email Field */}
+                        <div className="form-input-container">
+                            <label className="form-label">Email Address</label>
                             <div className="relative">
+                                <HiOutlineMail className="input-icon" />
                                 <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    id="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="form mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="form-input shadow-inner"
+                                    placeholder="your@email.com"
                                     required
                                 />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 cursor-pointer">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-5 w-5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? (
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        ) : (
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        )}
-                                    </svg>
-                                </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-start">
-                            <Link to="/forgot-password" className="text-sm form-secondary text-blue-700 hover:text-blue-900">
-                                Forgot Password?
-                            </Link>
+                        {/* Password Field */}
+                        <div className="form-input-container">
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="form-label !mb-0">Password</label>
+                                <Link to="/forgot-password" size="sm" className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-wider">
+                                    Forgot?
+                                </Link>
+                            </div>
+                            <div className="relative">
+                                <HiOutlineLockClosed className="input-icon" />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="form-input shadow-inner !pr-14"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-600 transition-colors cursor-pointer"
+                                >
+                                    {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+                                </button>
+                            </div>
                         </div>
 
-                        <button
+                        {/* Login Button */}
+                        <motion.button
+                            whileHover={isActive ? { scale: 1.02 } : {}}
+                            whileTap={isActive ? { scale: 0.98 } : {}}
                             type="submit"
-                            className={`mt-4 w-full text-white rounded-2xl py-2 font-semibold transition duration-300 cursor-pointer ${
-                                isActive ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-                            }`}
                             disabled={!isActive || submitting || loading}
+                            className={`w-full py-4 mt-6 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
+                                isActive && !submitting && !loading
+                                ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30 hover:bg-cyan-400 cursor-pointer' 
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed '
+                            }`}
                         >
-                            {submitting || loading ? 'Logging in...' : 'Login'}
-                        </button>
+                            {submitting || loading ? 'Authenticating...' : (
+                                <>
+                                    Login <HiChevronRight className="text-xl" />
+                                </>
+                            )}
+                        </motion.button>
+
+                        <div className="text-center pt-8 mt-4 border-t border-slate-800">
+                            <p className="text-slate-400 text-sm">
+                                New to EduGlobal?
+                                <Link to="/register" className="text-cyan-400 font-bold ml-2 hover:underline">
+                                    Create an account
+                                </Link>
+                            </p>
+                        </div>
                     </form>
-                </div>
-            </div>
+                </motion.div>
+            </main>
+
             <Footer />
         </section>
     );

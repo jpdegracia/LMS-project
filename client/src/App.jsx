@@ -147,9 +147,9 @@ const App = () => {
 
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
-                <Route path="/contact-nav" element={<ContactNav />} />
-                <Route path="/services-nav" element={<PracticeExamNav />} />
-                <Route path="/about" element={<AboutUs />} />
+                <Route path="/contact" element={<ContactNav />} />
+                <Route path="/practice-exam" element={<PracticeExamNav />} />
+                <Route path="/about-us" element={<AboutUs />} />
                 <Route path="*" element={<ErrorPage />} />
 
 

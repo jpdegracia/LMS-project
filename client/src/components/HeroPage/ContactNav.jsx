@@ -59,86 +59,69 @@ const Contact = () => {
 
   return (
     <div>
-    <Navbar />
-    <section className="px-4 py-10 bg-slate-100 rounded-xl m-5">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
-        {/* Left Section: Map Embed */}
-        <div className="w-full h-[300px] md:h-full rounded-xl overflow-hidden shadow-lg my-2">
-          <iframe
-            title="Google Map"
-            className="w-full h-full"
-            style={{ border: 0 }}
-            loading="lazy"
-            allowFullScreen
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3925.057112065806!2d123.90614228418312!3d10.337314740821103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x33a999f225de375b%3A0x32c695336031b2c1!2sThe%20Careerlab!5e0!3m2!1sen!2sph!4v1745554423150!5m2!1sen!2sph"
-          ></iframe>
+      <Navbar/>
+    <section className="py-20 px-6 bg-slate-800/80">
+      <div className="max-w-6xl mx-auto bg-slate-800/80 rounded-[2rem] overflow-hidden shadow-2xl border border-slate-700">
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          
+          {/* Left: Map with a darker overlay */}
+          <div className="h-[400px] lg:h-auto relative">
+            <iframe
+              title="Google Map"
+              className="w-full h-full"
+              style={{ border: 0 }}
+              loading="lazy"
+              src="https://www.google.com/maps/embed?..." // Ensure valid URL
+            ></iframe>
+            <div className="absolute inset-0 pointer-events-none shadow-[inner_0_0_50px_rgba(0,0,0,0.5)]"></div>
+          </div>
+
+          {/* Right: Modern Form */}
+          <div className="p-8 md:p-12 bg-slate-800">
+            <h2 className="text-3xl font-bold text-white mb-2">Visit Us</h2>
+            <p className="text-slate-400 mb-8">Have questions? Our team is here to help you navigate your career path.</p>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Full Name</label>
+                  <input 
+                    name="name" value={formData.name} onChange={handleChange}
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 transition-all outline-none"
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Email Address</label>
+                  <input 
+                    type="email" name="email" value={formData.email} onChange={handleChange}
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 transition-all outline-none"
+                    placeholder="john@example.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Message</label>
+                <textarea 
+                  name="message" value={formData.message} onChange={handleChange} rows="4"
+                  className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500 transition-all outline-none"
+                  placeholder="How can we help?"
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95"
+              >
+                {loading ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
+          </div>
         </div>
-
-        {/* Right Section: Form */}
-        <form className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-8 space-y-6 my-18" onSubmit={handleSubmit}>
-          {/* Form Title */}
-          <div className="max-w-md mx-auto p-6 bg-slate-800 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
-            <h2 className="h2 text-yellow-200">Contact & Visit Us:</h2>
-          </div>
-
-          {/* Form Fields */}
-          <div>
-            <label htmlFor="name" className="font-secondary block text-gray-700 dark:text-gray-300">Name:</label>
-            <input
-              type="text"
-              id="name" 
-              name="name" 
-              value={formData.name}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Your name"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="font-secondary block text-gray-700 dark:text-gray-300">Email:</label>
-            <input
-              type="email"
-              id="email" 
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="message" className="font-secondary block text-gray-700 dark:text-gray-300">Message:</label>
-            <textarea
-              id="message" 
-              name="message" 
-              value={formData.message}
-              onChange={handleChange}
-              rows="5"
-              className="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Your message..."
-              required
-            />
-          </div>
-
-          {/* Loading, Success, and Error Messages */}
-          {loading && <p className="text-blue-600 dark:text-blue-400 font-bold">Sending message...</p>}
-          {successMessage && <p className="text-green-600 dark:text-green-400 font-bold">{successMessage}</p>}
-          {errorMessage && <p className="text-red-600 dark:text-red-400 font-bold ">{errorMessage}</p>}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="btn-a font-secondary font-normal"
-            disabled={loading} 
-          >
-            {loading ? 'Sending...' : 'Send Message'}
-          </button>
-        </form>
       </div>
     </section>
-    <Footer />
+    <Footer/>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiOutlineMail, HiChevronRight, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
 import Navbar from '../Navbar/Navbar';
 import Footer from '../Footer/Footer';
 
@@ -15,7 +17,6 @@ const ForgotPassword = () => {
     setError('');
     setMessage('');
 
-    // Basic email validation
     if (!email.trim() || !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
       setError('Please enter a valid email address.');
       setLoading(false);
@@ -23,82 +24,101 @@ const ForgotPassword = () => {
     }
 
     try {
-      // Replace this with your actual API endpoint
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/forgot-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to send link.');
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to send password reset email.');
-      }
-
-      setMessage(data.message || 'We have sent a password reset link to your email address. Please check your inbox, including your spam or junk mail folder.');
+      setMessage('Reset link sent! Please check your inbox and spam folder.');
       setEmail(''); 
-    } catch (error) {
-
-      setError(error.message || 'An unexpected error occurred.');
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section>
+    <section className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
-      <div className="mt-20 mb-20 flex justify-center rounded-3xl border border-black bg-white drop-shadow-2xl p-8 max-w-md mx-auto">
-        <div className="w-full">
-          <h2 className="text-center text-2xl font-bold text-gray-700 mb-6">Forgot Password</h2>
-          <p className="text-center text-gray-600 mb-4">
-            Enter your email address and we&apos;ll send you a password reset link.
-          </p>
+      
+      <main className="flex-grow flex items-center justify-center py-20 px-4 relative">
+        {/* Background Glow */}
+        <div className="absolute w-[300px] h-[300px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address:
-              </label>
-              <input
-                type="email"
-                id="email"
-                className={`form w-full ${error ? 'border-red-500' : ''}`}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-              />
-              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-            </div>
-
-            <button
-              type="submit"
-              className={`w-full py-2 rounded-md font-semibold text-white transition duration-300 ${
-                loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-              disabled={loading}
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </form>
-
-          {message && (
-            <div className="mt-6 text-center">
-              <p className="text-green-500 text-center mt-4">{message}</p>
-            </div>
-          )}
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Remembered your password? <Link to="/login" className="text-blue-600 hover:underline">Login</Link>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-8 md:p-10 rounded-[2.5rem] shadow-2xl z-10"
+        >
+          <div className="mb-8">
+            <Link to="/login" className="flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors text-sm mb-6 group">
+              <HiOutlineArrowNarrowLeft className="group-hover:-translate-x-1 transition-transform" />
+              Back to Login
+            </Link>
+            <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Reset Password</h2>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Enter your email and we'll send you a recovery link.
             </p>
           </div>
-        </div>
-      </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Using the container with the manual 'group' class for Tailwind v4 */}
+            <div className="form-input-container group">
+              <label className="form-label">Email Address</label>
+              <div className="relative">
+                <HiOutlineMail className="input-icon" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`form-input shadow-inner ${error ? 'border-red-500/50 focus:border-red-500' : ''}`}
+                  placeholder="name@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {(error || message) && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className={`p-4 rounded-xl text-center text-xs font-bold border ${
+                    error ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'
+                  }`}
+                >
+                  {error || message}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.button
+              whileHover={!loading ? { scale: 1.02 } : {}}
+              whileTap={!loading ? { scale: 0.98 } : {}}
+              type="submit"
+              disabled={loading}
+              className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
+                loading 
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                : 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-400 cursor-pointer'
+              }`}
+            >
+              {loading ? 'Sending...' : (
+                <>
+                  Send Reset Link <HiChevronRight className="text-xl" />
+                </>
+              )}
+            </motion.button>
+          </form>
+        </motion.div>
+      </main>
+
       <Footer />
     </section>
   );
