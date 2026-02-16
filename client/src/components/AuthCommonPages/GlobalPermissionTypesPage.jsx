@@ -1,532 +1,226 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { FaEdit, FaTrashAlt, FaPlusCircle, FaSave, FaTimesCircle, FaSearch } from 'react-icons/fa';
-import { IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    HiOutlinePlus, HiOutlineSearch, HiOutlineTrash, HiOutlinePencilAlt, 
+    HiOutlineChevronUp, HiOutlineChevronDown, HiOutlineFilter,
+    HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineSave, 
+    HiOutlineXCircle, HiOutlineInformationCircle 
+} from 'react-icons/hi';
 import UserContext from '../UserContext/UserContext';
 
 const GlobalPermissionTypesPage = () => {
     const { hasPermission, loading: contextLoading } = useContext(UserContext);
 
+    // Data States
     const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
 
-    const [newPermission, setNewPermission] = useState({ name: '', description: '', category: '' });
+    // CRUD UI States
     const [showCreateForm, setShowCreateForm] = useState(false);
-    const [createErrors, setCreateErrors] = useState({});
-
-    const [editingPermissionId, setEditingPermissionId] = useState(null);
-    const [editedPermission, setEditedPermission] = useState({ name: '', description: '', category: '' });
-    const [editErrors, setEditErrors] = useState({});
-
+    const [newPermission, setNewPermission] = useState({ name: '', description: '', category: '' });
+    const [editingId, setEditingId] = useState(null);
+    const [editedData, setEditedData] = useState({ name: '', description: '', category: '' });
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [permissionToDelete, setPermissionToDelete] = useState(null);
 
+    // Filter, Sort & Pagination States
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeCategory, setActiveCategory] = useState('All');
     const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'ascending' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 15;
 
-    // --- Fetch All Permissions ---
     const fetchPermissions = async () => {
         if (contextLoading) return;
-
-        if (!hasPermission('permission:read:all')) {
-            setError("You don't have permission to view all permissions.");
-            setLoading(false);
-            return;
-        }
-
         setLoading(true);
-        setError(null);
-        setSuccessMessage(null);
-
         try {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/permissions`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Failed to fetch permissions. Status: ${response.status}`);
-            }
-
             const data = await response.json();
-            if (data.success && Array.isArray(data.permissions)) {
-                setPermissions(data.permissions);
-            } else {
-                throw new Error(data.message || 'Failed to fetch permissions: Invalid response structure. Expected "permissions" array.');
-            }
+            if (data.success) setPermissions(data.permissions);
         } catch (err) {
-            console.error('Error fetching permissions:', err);
-            setError(err.response?.data?.message || err.message || 'Network error fetching permissions.');
+            setError('Failed to sync directory.');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        if (!contextLoading) {
-            fetchPermissions();
-        }
-    }, [contextLoading, hasPermission]);
+    useEffect(() => { if (!contextLoading) fetchPermissions(); }, [contextLoading]);
 
-    // --- Helper for clearing messages (already in place) ---
-    useEffect(() => {
-        if (successMessage || error) {
-            const timer = setTimeout(() => {
-                setSuccessMessage(null);
-                setError(null);
-            }, 5000); // Messages clear after 5 seconds
-            return () => clearTimeout(timer);
-        }
-    }, [successMessage, error]);
+    // Reset pagination on filter change
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, activeCategory]);
 
-    // --- Create Permission Handlers ---
-    const handleNewPermissionChange = (e) => {
-        setNewPermission({ ...newPermission, [e.target.name]: e.target.value });
-        setCreateErrors({});
-    };
-
-    const handleCreatePermission = async (e) => {
+    // --- CRUD Logic ---
+    const handleCreate = async (e) => {
         e.preventDefault();
-        setCreateErrors({});
-        setError(null);
-        setSuccessMessage(null);
-
-        if (!newPermission.name.trim()) {
-            setCreateErrors({ name: 'Permission name is required.' });
-            return;
-        }
-
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/permissions`, {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/permissions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(newPermission),
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                if (response.status === 409 && errorData.message.includes("already exists")) {
-                    setCreateErrors({ name: errorData.message });
-                } else {
-                    setCreateErrors({ general: errorData.message || `Failed to create permission with status: ${response.status}` });
-                }
-                return;
-            }
-
-            const data = await response.json();
-            if (data.success) {
-                setSuccessMessage(data.message);
+            if (res.ok) {
+                setSuccessMessage("New Permission Deployed");
                 setNewPermission({ name: '', description: '', category: '' });
                 setShowCreateForm(false);
-                // Delay fetchPermissions to allow message to show
-                setTimeout(() => fetchPermissions(), 1000); // 1-second delay
-            } else {
-                setCreateErrors({ general: data.message || 'Failed to create permission.' });
+                fetchPermissions();
             }
-        } catch (err) {
-            console.error('Error creating permission:', err);
-            setCreateErrors({ general: err.response?.data?.message || err.message || 'Network error creating permission.' });
-        }
+        } catch (err) { setError("Create failed"); }
     };
 
-    // --- Edit Permission Handlers ---
-    const startEditing = (permission) => {
-        setEditingPermissionId(permission._id);
-        setEditedPermission({ name: permission.name, description: permission.description, category: permission.category });
-        setEditErrors({});
-    };
-
-    const handleEditedPermissionChange = (e) => {
-        setEditedPermission({ ...editedPermission, [e.target.name]: e.target.value });
-        setEditErrors({});
-    };
-
-    const saveEditedPermission = async (e) => {
-        e.preventDefault();
-        setEditErrors({});
-        setError(null);
-        setSuccessMessage(null);
-
-        if (!editedPermission.name.trim()) {
-            setEditErrors({ name: 'Permission name cannot be empty.' });
-            return;
-        }
-
+    const handleUpdate = async (id) => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/permissions/${editingPermissionId}`, {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/permissions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(editedPermission),
+                body: JSON.stringify(editedData),
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                if (response.status === 409 && errorData.message.includes("already exists")) {
-                    setEditErrors({ name: errorData.message });
-                } else {
-                    setEditErrors({ general: errorData.message || `Failed to update permission with status: ${response.status}` });
-                }
-                return;
+            if (res.ok) {
+                setEditingId(null);
+                setSuccessMessage("Logic Updated");
+                fetchPermissions();
             }
-
-            const data = await response.json();
-            if (data.success) {
-                setSuccessMessage(data.message);
-                setEditingPermissionId(null);
-                // Delay fetchPermissions to allow message to show
-                setTimeout(() => fetchPermissions(), 1000); // 1-second delay
-            } else {
-                setEditErrors({ general: data.message || 'Failed to update permission.' });
-            }
-        } catch (err) {
-            console.error('Error updating permission:', err);
-            setEditErrors({ general: err.response?.data?.message || err.message || 'Network error updating permission.' });
-        }
+        } catch (err) { setError("Update failed"); }
     };
 
-    const cancelEditing = () => {
-        setEditingPermissionId(null);
-        setEditErrors({});
-    };
-
-    // --- Delete Permission Handlers ---
-    const confirmDelete = (permission) => {
-        setPermissionToDelete(permission);
-        setShowDeleteConfirm(true);
-        setError(null);
-        setSuccessMessage(null);
-    };
-
-    const handleDeletePermission = async () => {
-        setShowDeleteConfirm(false);
-        if (!permissionToDelete || !permissionToDelete._id) {
-            console.warn("handleDeletePermission: No valid permissionToDelete._id found.");
-            setError("Cannot delete: Missing permission ID.");
-            return;
-        }
-
-        const deleteUrl = `${import.meta.env.VITE_BACKEND_URL}/permissions/${permissionToDelete._id}`;
-
-        // Keep loading true *only* during the API call, not throughout the message display
-        setLoading(true);
-        setError(null);
-        setSuccessMessage(null);
-
+    const handleDelete = async () => {
         try {
-            const response = await fetch(deleteUrl, {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/permissions/${permissionToDelete._id}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                if (response.status === 400 && errorData.message.includes("assigned to")) {
-                    setError(errorData.message);
-                } else {
-                    setError(errorData.message || `Failed to delete permission with status: ${response.status}`);
-                }
-                setLoading(false); // End loading on error immediately
-                return;
+            if (res.ok) {
+                setSuccessMessage("Access Revoked");
+                setShowDeleteConfirm(false);
+                fetchPermissions();
             }
-
-            const data = await response.json();
-            if (data.success) {
-                setSuccessMessage(data.message || `Permission "${permissionToDelete.name}" successfully deleted.`);
-                // Delay setting loading to false and fetching permissions
-                // This allows the success message to be visible for a moment
-                setTimeout(() => {
-                    setLoading(false); // End loading after delay
-                    fetchPermissions(); // Re-fetch permissions to update the list
-                }, 1000); // Show message for 1 second before re-fetching
-            } else {
-                setError(data.message || 'Failed to delete permission.');
-                setLoading(false); // End loading on error immediately
-            }
-        } catch (err) {
-            console.error('Error deleting permission:', err);
-            setError(err.response?.data?.message || err.message || 'Network error deleting permission.');
-            setLoading(false); // End loading on network error immediately
-        } finally {
-            setPermissionToDelete(null); // Clear permission to delete regardless of outcome
-        }
+        } catch (err) { setError("Delete failed"); }
     };
 
-    // --- Filter permissions based on search term ---
-    const filteredPermissions = permissions.filter(perm =>
-        perm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (perm.description && perm.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (perm.category && perm.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    // --- Sorting Logic ---
-    const sortedPermissions = [...filteredPermissions].sort((a, b) => {
-        const aValue = a[sortConfig.key] || '';
-        const bValue = b[sortConfig.key] || '';
-
-        if (aValue < bValue) {
-            return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-            return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-    });
+    // --- Helpers ---
+    const categories = ['All', ...new Set(permissions.map(p => p.category || 'General'))];
 
     const requestSort = (key) => {
         let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
         setSortConfig({ key, direction });
     };
 
-    const getSortIndicator = (key) => {
-        if (sortConfig.key !== key) {
-            return null;
-        }
-        if (sortConfig.direction === 'ascending') {
-            return <IoMdArrowDropup className="ml-1 text-gray-500" />;
-        }
-        return <IoMdArrowDropdown className="ml-1 text-gray-500" />;
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) return <HiOutlineChevronUp className="ml-1 opacity-20" />;
+        return sortConfig.direction === 'ascending' ? <HiOutlineChevronUp className="ml-1 text-cyan-400" /> : <HiOutlineChevronDown className="ml-1 text-cyan-400" />;
     };
 
+    // --- Filter & Sort Engine ---
+    const filteredData = permissions.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCat = activeCategory === 'All' || (p.category || 'General') === activeCategory;
+        return matchesSearch && matchesCat;
+    }).sort((a, b) => {
+        const aVal = a[sortConfig.key] || '';
+        const bVal = b[sortConfig.key] || '';
+        if (aVal < bVal) return sortConfig.direction === 'ascending' ? -1 : 1;
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+    });
+
+    const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
     return (
-        <div className="container-2 mx-auto p-6 bg-sky-100">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold font-primary uppercase text-gray-800">Global Permission Types</h1>
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search permissions..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    />
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FaSearch className="text-gray-400" />
-                    </div>
+        <div className="min-h-screen bg-slate-950 text-slate-200 p-6 md:p-10">
+            {/* Header */}
+            <div className="mb-10 flex justify-between items-end">
+                <div>
+                    <h1 className="text-4xl font-black text-white tracking-tighter uppercase">Permission Tree<span className="text-cyan-400">°</span></h1>
+                    <p className="text-slate-400 mt-2">Global access logic and technical gates.</p>
+                </div>
+                {hasPermission('permission:create') && (
+                    <button onClick={() => setShowCreateForm(!showCreateForm)} className="bg-white text-slate-950 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-cyan-400 transition-all">
+                        <HiOutlinePlus size={20} /> Create New
+                    </button>
+                )}
+            </div>
+
+            {/* Create Form */}
+            <AnimatePresence>
+                {showCreateForm && (
+                    <motion.form 
+                        initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        onSubmit={handleCreate} className="mb-8 p-8 rounded-[2.5rem] bg-slate-900/40 border border-slate-800 backdrop-blur-xl grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden"
+                    >
+                        <div className="form-input-container group"><label className="form-label">Key Name</label><input type="text" value={newPermission.name} onChange={e => setNewPermission({...newPermission, name: e.target.value})} className="form-input" placeholder="logic:key" required /></div>
+                        <div className="form-input-container group"><label className="form-label">Category</label><input type="text" value={newPermission.category} onChange={e => setNewPermission({...newPermission, category: e.target.value})} className="form-input" placeholder="Group" /></div>
+                        <div className="form-input-container group"><label className="form-label">Description</label><input type="text" value={newPermission.description} onChange={e => setNewPermission({...newPermission, description: e.target.value})} className="form-input" placeholder="Role capability" /></div>
+                        <div className="md:col-span-3 flex justify-end gap-3"><button type="submit" className="bg-cyan-500 text-slate-950 px-8 py-2 rounded-xl font-bold">Deploy</button></div>
+                    </motion.form>
+                )}
+            </AnimatePresence>
+
+            {/* Filter & Search Section */}
+            <div className="space-y-6 mb-8">
+                <div className="relative max-w-md group">
+                    <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400" />
+                    <input type="text" placeholder="Search logic keys..." className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 pl-12 text-white outline-none focus:ring-4 focus:ring-cyan-500/10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </div>
+
+                <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                    <div className="p-2 bg-slate-900 rounded-lg text-slate-500 border border-slate-800"><HiOutlineFilter /></div>
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+                                activeCategory === cat 
+                                ? 'bg-cyan-500 border-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20' 
+                                : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'
+                            }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {successMessage && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong className="font-bold">Success!</strong>
-                    <span className="block sm:inline"> {successMessage}</span>
-                </div>
-            )}
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong className="font-bold">Error!</strong>
-                    <span className="block sm:inline"> {error}</span>
-                </div>
-            )}
-
-            {/* Create New Permission Section */}
-            {hasPermission('permission:create') && (
-                <div className="mb-6">
-                    <button
-                        onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="btn-a rounded-lg flex items-center cursor-pointer"
-                    >
-                        <FaPlusCircle className="mr-2" /> {showCreateForm ? 'Hide Form' : 'Create New Permission'}
-                    </button>
-
-                    {showCreateForm && (
-                        <form onSubmit={handleCreatePermission} className="mt-4 p-4 border rounded-lg bg-gray-50">
-                            <h3 className="text-xl font-semibold mb-3">Add New Permission</h3>
-                            {createErrors.general && <p className="text-red-500 text-sm mb-2">{createErrors.general}</p>}
-                            <div className="mb-3">
-                                <label htmlFor="newName" className="block text-sm font-medium text-gray-700">Name (e.g., user:create):</label>
-                                <input
-                                    type="text"
-                                    id="newName"
-                                    name="name"
-                                    value={newPermission.name}
-                                    onChange={handleNewPermissionChange}
-                                    className={`mt-1 block w-full border rounded-md shadow-sm p-2 ${createErrors.name ? 'border-red-500' : 'border-gray-300'}`}
-                                    placeholder="e.g., user:create"
-                                    required
-                                />
-                                {createErrors.name && <p className="text-red-500 text-xs italic">{createErrors.name}</p>}
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700">Description (Optional):</label>
-                                <input
-                                    type="text"
-                                    id="newDescription"
-                                    name="description"
-                                    value={newPermission.description}
-                                    onChange={handleNewPermissionChange}
-                                    className="mt-1 block w-full border rounded-md shadow-sm p-2 border-gray-300"
-                                    placeholder="e.g., Allows creation of new user accounts"
-                                />
-                            </div>
-                            <div className="mb-4">
-                                <label htmlFor="newCategory" className="block text-sm font-medium text-gray-700">Category (Optional):</label>
-                                <input
-                                    type="text"
-                                    id="newCategory"
-                                    name="category"
-                                    value={newPermission.category}
-                                    onChange={handleNewPermissionChange}
-                                    className="mt-1 block w-full border rounded-md shadow-sm p-2 border-gray-300"
-                                    placeholder="e.g., user_management"
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="btn-create rounded-lg flex items-center"
-                            >
-                                <FaSave className="mr-2" /> Add Permission
-                            </button>
-                        </form>
-                    )}
-                </div>
-            )}
-
-            {/* Permissions Table */}
-            {loading ? (
-                <div className="text-center text-gray-600">Loading permissions...</div>
-            ) : sortedPermissions.length === 0 && searchTerm === '' ? (
-                <div className="text-center text-gray-600">No permissions found.</div>
-            ) : sortedPermissions.length === 0 && searchTerm !== '' ? (
-                <div className="text-center text-gray-600">No permissions found matching "{searchTerm}".</div>
-            ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                {/* Sortable Name Header */}
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                    onClick={() => requestSort('name')}
-                                >
-                                    <div className="flex items-center">
-                                        Name {getSortIndicator('name')}
-                                    </div>
-                                </th>
-                                {/* Sortable Description Header - Updated to ensure truncation */}
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-full max-w-sm"
-                                    onClick={() => requestSort('description')}
-                                >
-                                    <div className="flex items-center">
-                                        Description {getSortIndicator('description')}
-                                    </div>
-                                </th>
-                                {/* Sortable Category Header */}
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                    onClick={() => requestSort('category')}
-                                >
-                                    <div className="flex items-center">
-                                        Category {getSortIndicator('category')}
-                                    </div>
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            {/* Table */}
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-800/50 border-b border-slate-700 text-[11px] font-black uppercase text-slate-400">
+                                <th onClick={() => requestSort('name')} className="p-5 cursor-pointer hover:text-white group">Logic Key {getSortIcon('name')}</th>
+                                <th onClick={() => requestSort('category')} className="p-5 cursor-pointer hover:text-white group">Category {getSortIcon('category')}</th>
+                                <th className="p-5">Description</th>
+                                <th className="p-5 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {sortedPermissions.map((permission) => (
-                                <tr key={permission._id}>
-                                    {editingPermissionId === permission._id ? (
-                                        // Edit row
+                        <tbody className="divide-y divide-slate-800">
+                            {currentItems.map((p) => (
+                                <tr key={p._id} className="hover:bg-slate-800/30 transition-colors">
+                                    {editingId === p._id ? (
                                         <>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <input
-                                                    type="text"
-                                                    name="name"
-                                                    value={editedPermission.name}
-                                                    onChange={handleEditedPermissionChange}
-                                                    className={`form w-full text-sm ${editErrors.name ? 'border-red-500' : 'border-gray-300'}`}
-                                                />
-                                                {editErrors.name && <p className="text-red-500 text-xs italic">{editErrors.name}</p>}
-                                            </td>
-                                            <td className="px-6 py-4 max-w-sm">
-                                                <input
-                                                    type="text"
-                                                    name="description"
-                                                    value={editedPermission.description}
-                                                    onChange={handleEditedPermissionChange}
-                                                    className="form w-full text-sm border-gray-300"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <input
-                                                    type="text"
-                                                    name="category"
-                                                    value={editedPermission.category}
-                                                    onChange={handleEditedPermissionChange}
-                                                    className="form w-full text-sm border-gray-300"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                                <button
-                                                    onClick={saveEditedPermission}
-                                                    className="text-green-600 hover:text-green-900 mr-6 text-[18px]"
-                                                    title="Save"
-                                                >
-                                                    <FaSave />
-                                                </button>
-                                                <button
-                                                    onClick={cancelEditing}
-                                                    className="text-red-600 hover:text-red-900 text-[18px]"
-                                                    title="Cancel"
-                                                >
-                                                    <FaTimesCircle />
-                                                </button>
-                                                {editErrors.general && <p className="text-red-500 text-xs italic">{editErrors.general}</p>}
+                                            <td className="p-4"><input type="text" value={editedData.name} onChange={e => setEditedData({...editedData, name: e.target.value})} className="bg-slate-800 border border-cyan-500/50 rounded-lg p-2 text-xs w-full text-cyan-400 outline-none" /></td>
+                                            <td className="p-4"><input type="text" value={editedData.category} onChange={e => setEditedData({...editedData, category: e.target.value})} className="bg-slate-800 border border-cyan-500/50 rounded-lg p-2 text-xs w-full text-white outline-none" /></td>
+                                            <td className="p-4"><input type="text" value={editedData.description} onChange={e => setEditedData({...editedData, description: e.target.value})} className="bg-slate-800 border border-cyan-500/50 rounded-lg p-2 text-xs w-full text-white outline-none" /></td>
+                                            <td className="p-4 text-right flex justify-end gap-2">
+                                                <button onClick={() => handleUpdate(p._id)} className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-lg"><HiOutlineSave size={20}/></button>
+                                                <button onClick={() => setEditingId(null)} className="p-2 text-slate-500 hover:bg-slate-800 rounded-lg"><HiOutlineXCircle size={20}/></button>
                                             </td>
                                         </>
                                     ) : (
-                                        // Display row - Description cell updated
                                         <>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-bold font-secondary text-blue-600">{permission.name}</div>
-                                            </td>
-                                            
-                                            {/* 👇 UPDATED DESCRIPTION CELL FOR 2-LINE TRUNCATION 👇 */}
-                                            <td className="px-6 py-4 max-w-sm overflow-hidden">
-                                                <div 
-                                                    className="text-sm font-secondary text-gray-900 line-clamp-2"
-                                                    title={permission.description}
-                                                >
-                                                    {permission.description || 'N/A'}
-                                                </div>
-                                            </td>
-                                            {/* 👆 END UPDATED DESCRIPTION CELL 👆 */}
-
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-secondary text-gray-900">{permission.category}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                                {hasPermission('permission:update') && (
-                                                    <button
-                                                        onClick={() => startEditing(permission)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-6 text-[18px]"
-                                                        title="Edit"
-                                                    >
-                                                        <FaEdit />
-                                                    </button>
-                                                )}
-                                                {hasPermission('permission:delete') && (
-                                                    <button
-                                                        onClick={() => confirmDelete(permission)}
-                                                        className="text-red-600 hover:text-red-900 text-[18px]"
-                                                        title="Delete"
-                                                    >
-                                                        <FaTrashAlt />
-                                                    </button>
-                                                )}
+                                            <td className="p-5 font-mono text-xs text-cyan-400 font-bold">{p.name}</td>
+                                            <td className="p-5"><span className="text-[10px] font-black uppercase text-slate-500 bg-slate-950 px-2 py-1 rounded border border-slate-800">{p.category || 'General'}</span></td>
+                                            <td className="p-5 text-slate-400 text-sm truncate max-w-xs">{p.description}</td>
+                                            <td className="p-5 text-right flex justify-end gap-2">
+                                                <button onClick={() => { setEditingId(p._id); setEditedData(p); }} className="p-2 border border-slate-800 rounded-xl text-slate-500 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all"><HiOutlinePencilAlt size={16}/></button>
+                                                <button onClick={() => { setPermissionToDelete(p); setShowDeleteConfirm(true); }} className="p-2 border border-slate-800 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all"><HiOutlineTrash size={16}/></button>
                                             </td>
                                         </>
                                     )}
@@ -535,32 +229,43 @@ const GlobalPermissionTypesPage = () => {
                         </tbody>
                     </table>
                 </div>
-            )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-                        <h3 className="text-xl font-semibold mb-4">Confirm Deletion</h3>
-                        <p className="mb-6">Are you sure you want to delete the permission: <strong>{permissionToDelete?.name}</strong>?</p>
-                        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={() => { setShowDeleteConfirm(false); setPermissionToDelete(null); setError(null); }}
-                                className="btn-cancel rounded-lg"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDeletePermission}
-                                className="btn-delete rounded-lg"
-                            >
-                                Delete
-                            </button>
-                        </div>
+                {/* Pagination */}
+                <div className="p-6 border-t border-slate-800 flex justify-between items-center bg-slate-900/50">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Page {currentPage} of {totalPages}</span>
+                    <div className="flex gap-2">
+                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-2 rounded-xl border border-slate-800 text-slate-400 disabled:opacity-20 hover:bg-slate-800"><HiOutlineChevronLeft/></button>
+                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="p-2 rounded-xl border border-slate-800 text-slate-400 disabled:opacity-20 hover:bg-slate-800"><HiOutlineChevronRight/></button>
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Success Toast Placeholder */}
+            <AnimatePresence>
+                {successMessage && (
+                    <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] bg-emerald-500 text-slate-950 px-6 py-3 rounded-2xl font-bold shadow-2xl flex items-center gap-2">
+                        <HiOutlineInformationCircle size={20}/> {successMessage}
+                        <button onClick={() => setSuccessMessage(null)} className="ml-4 opacity-50 hover:opacity-100">✕</button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Modal */}
+            <AnimatePresence>
+                {showDeleteConfirm && (
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
+                            <HiOutlineTrash size={48} className="text-red-500 mx-auto mb-4" />
+                            <h3 className="text-xl font-bold text-white mb-2">Confirm Revoke</h3>
+                            <p className="text-slate-400 text-sm mb-6">Permanently delete logic key <span className="text-white font-bold">{permissionToDelete?.name}</span>?</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 text-slate-400 font-bold hover:text-white transition-colors">Cancel</button>
+                                <button onClick={handleDelete} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-red-500">Delete</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

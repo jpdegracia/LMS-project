@@ -1,32 +1,30 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaBars, FaCheckDouble } from 'react-icons/fa';
-import { IoNotificationsOutline, IoClose } from 'react-icons/io5'; 
+import { IoNotificationsOutline, IoClose, IoLogOutOutline, IoSettingsOutline } from 'react-icons/io5'; 
 import { Link, useNavigate } from 'react-router-dom';
-import UserContext from '../UserContext/UserContext';
-import { Megaphone } from 'lucide-react';
+import { Megaphone, User, BookOpen, Calendar, ShieldCheck } from 'lucide-react';
 import { BsStars } from "react-icons/bs"; 
-import GeminiAssistant from '../Ai/AiGeneration'; // Using your provided path
+import UserContext from '../UserContext/UserContext';
+import GeminiAssistant from '../Ai/AiGeneration';
+import eduGlobal_2 from '../../assets/eduGlobal_2.jpg';
 
 const Subnavbar = ({ setIsSidebarOpen, onLogout }) => {
     const { user, hasPermission, isLoggedIn, hasRole } = useContext(UserContext);
-    const [isNotificationsOpenDropDown, setIsNotificationsOpenDropDown] = useState(false);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [isChatOpen, setIsChatOpen] = useState(false); // 🏆 State for AI Chatbox
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     const navigate = useNavigate();
-
     const notificationsRef = useRef(null);
     const profileRef = useRef(null);
-    const aiRef = useRef(null); // 🏆 Ref for AI dropdown detection
+    const aiRef = useRef(null);
 
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [showProfile, setShowProfile] = useState(false);
-
-    // --- Notification Logic ---
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
+    // Fetch Logic (Simplified for brevity, keep your original logic here)
     const fetchNotifications = async () => {
         try {
             const response = await fetch(`${BACKEND_URL}/notifications`, {
@@ -51,6 +49,21 @@ const Subnavbar = ({ setIsSidebarOpen, onLogout }) => {
             return () => clearInterval(interval);
         }
     }, [isLoggedIn]);
+
+
+    // Dropdown Variants
+    const dropdownVariants = {
+        hidden: { opacity: 0, y: 10, scale: 0.95 },
+        visible: { 
+            opacity: 1, y: 0, scale: 1,
+            transition: { type: "spring", stiffness: 400, damping: 30 } 
+        },
+        exit: { opacity: 0, y: 10, scale: 0.95, transition: { duration: 0.2 } }
+    };
+
+    const getAvatarSrc = (user) => {
+        return user?.avatar || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=0D9488&color=fff`;
+    };
 
     const handleNotificationClick = async (n) => {
         try {
@@ -85,177 +98,147 @@ const Subnavbar = ({ setIsSidebarOpen, onLogout }) => {
         }
     };
 
-    // --- Dropdown Toggle Logic ---
-    const toggleNotificationsDropDown = () => {
-        setIsNotificationsOpenDropDown(!isNotificationsOpenDropDown);
-        setShowNotifications(true);
-        setIsProfileOpen(false);
-        setIsChatOpen(false); // Close AI when notifications open
-    };
-
-    const toggleProfileDropdown = () => {
-        setIsProfileOpen(!isProfileOpen);
-        setShowProfile(true);
-        setIsNotificationsOpenDropDown(false);
-        setIsChatOpen(false); // Close AI when profile opens
-    };
-
-    const toggleChatboxDropdown = () => {
-        setIsChatOpen(!isChatOpen);
-        setIsNotificationsOpenDropDown(false);
-        setIsProfileOpen(false);
-    };
-
-    const handleLogoutClick = () => {
-        onLogout();
-        setIsProfileOpen(false);
-    };
-
-    // Outside Click Handling
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
-                setIsNotificationsOpenDropDown(false);
-            }
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setIsProfileOpen(false);
-            }
-            if (aiRef.current && !aiRef.current.contains(event.target)) {
-                setIsChatOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const getAvatarSrc = (user) => {
-        if (user?.avatar && typeof user.avatar === 'string' && user.avatar.startsWith('http')) {
-            return user.avatar;
-        }
-        return `https://ui-avatars.com/api/?name=${user?.firstName || 'U'}+${user?.lastName || 'U'}&background=fffbeb&color=9ca3af&size=96`;
-    };
-
     return (
-        <nav className='bg-slate-900 px-4 py-3 flex flex-col sm:flex-row sm:justify-between items-center gap-y-2 sm:gap-y-0 sticky top-0 z-30 shadow-md'>
-            <div className='flex items-center text-xl w-full sm:w-auto justify-between sm:justify-start'>
-                <FaBars className='text-gray-400 me-4 cursor-pointer hover:text-white transition-colors' onClick={() => setIsSidebarOpen(prev => !prev)} />
-                <img src="https://thecareerlab.ph/wp-content/uploads/2024/01/wordpressLogo.png" alt="logo" className="w-auto h-8 bg-white rounded p-1" />
+        <nav className='bg-slate-900 px-6 py-3 flex justify-between items-center sticky top-0 z-40 border-b border-slate-800 shadow-xl'>
+            
+            {/* Left: Sidebar Toggle & Logo */}
+            <div className='flex items-center gap-4'>
+                <motion.button 
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setIsSidebarOpen(prev => !prev)}
+                    className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer"
+                >
+                    <FaBars className='text-xl' />
+                </motion.button>
+                <Link to="/dashboard">
+                    <img 
+                        src={eduGlobal_2}
+                        alt="logo" 
+                        className="h-8 w-auto brightness-110" 
+                    />
+                </Link>
             </div>
 
-            <div className='flex items-center gap-x-4 relative'>
+            {/* Right: Actions */}
+            <div className='flex items-center gap-3'>
                 {isLoggedIn && (
                     <>
-                        {/* 🏆 AI ASSISTANT DROPDOWN */}
+                        {/* 🏆 AI ASSISTANT */}
                         <div className="relative" ref={aiRef}>
-                            <div 
-                                className={`relative cursor-pointer p-1.5 rounded-full transition-all duration-300
-                                    ${isChatOpen ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-gray-400 hover:text-purple-400 hover:bg-slate-800'}`} 
-                                onClick={toggleChatboxDropdown}
+                            <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => { setIsChatOpen(!isChatOpen); setIsNotificationsOpen(false); setIsProfileOpen(false); }}
+                                className={`relative p-2.5 rounded-xl transition-all border cursor-pointer ${
+                                    isChatOpen 
+                                    ? 'bg-purple-600 border-purple-400 text-white' 
+                                    : 'bg-slate-800 border-slate-700 text-purple-400 hover:border-purple-500/50'
+                                }`}
                             >
-                                <BsStars className={`text-2xl ${isChatOpen ? 'animate-pulse' : ''}`} />
+                                <BsStars className={`text-xl ${isChatOpen ? 'animate-pulse' : ''}`} />
                                 {!isChatOpen && (
-                                    <span className="absolute top-0 right-0 flex h-2 w-2">
+                                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500 border-2 border-slate-900"></span>
                                     </span>
                                 )}
-                            </div>
+                            </motion.button>
 
-                            {isChatOpen && (
-                                <div className="absolute right-0 mt-3 w-[350px] sm:w-[450px] z-50 animate-in fade-in zoom-in duration-200 origin-top-right">
-                                    <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden relative">
-                                        <button 
-                                            onClick={() => setIsChatOpen(false)}
-                                            className="absolute top-4 right-4 z-50 text-gray-500 hover:text-gray-800 transition-colors"
-                                        >
-                                            <IoClose size={20} />
-                                        </button>
-                                        <GeminiAssistant isDropdown={true} />
-                                    </div>
-                                </div>
-                            )}
+                            <AnimatePresence>
+                                {isChatOpen && (
+                                    <motion.div 
+                                        variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+                                        className="absolute right-0 mt-4 w-[380px] sm:w-[500px] z-50 origin-top-right shadow-2xl"
+                                    >
+                                        <div className="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden relative">
+                                            <button onClick={() => setIsChatOpen(false)} className="absolute top-4 right-4 z-[60] text-slate-400 hover:text-white transition-colors">
+                                                <IoClose size={24} />
+                                            </button>
+                                            <div className="max-h-[80vh] overflow-y-auto">
+                                                <GeminiAssistant isDropdown={true} />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Notification Dropdown */}
+                        {/* NOTIFICATIONS */}
                         <div className="relative" ref={notificationsRef}>
-                            <div className={`relative cursor-pointer p-1 rounded-full transition-all ${isNotificationsOpenDropDown ? 'text-white' : 'text-gray-400 hover:text-white hover:bg-slate-800'}`} onClick={toggleNotificationsDropDown}>
-                                <IoNotificationsOutline className="text-2xl" />
+                            <button 
+                                onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); setIsChatOpen(false); }}
+                                className={`p-2.5 rounded-xl transition-all border cursor-pointer ${
+                                    isNotificationsOpen ? 'bg-slate-800 border-slate-600 text-white' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                                }`}
+                            >
+                                <IoNotificationsOutline className="text-xl" />
                                 {unreadCount > 0 && (
-                                    <span className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-1.5 rounded-full border border-slate-900">
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-slate-900 cursor-pointer">
                                         {unreadCount}
                                     </span>
                                 )}
-                            </div>
+                            </button>
 
-                            {isNotificationsOpenDropDown && (
-                                <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 shadow-2xl z-50 rounded-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                                    <div className="px-4 py-3 bg-slate-50 border-b flex justify-between items-center">
-                                        <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
-                                        {unreadCount > 0 && (
-                                            <button onClick={markAllAsRead} className="text-[10px] text-white flex items-center rounded border bg-blue-600 py-0.5 px-1.5 border-gray-400 gap-1 font-medium hover:bg-blue-700 cursor-pointer transition-colors">
-                                                <FaCheckDouble /> Mark all read
+                            <AnimatePresence>
+                                {isNotificationsOpen && (
+                                    <motion.div 
+                                        variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+                                        className="absolute right-0 mt-4 w-80 bg-slate-800 border border-slate-700 shadow-2xl z-50 rounded-2xl overflow-hidden origin-top-right"
+                                    >
+                                        <div className="px-4 py-3 bg-slate-800/50 border-b border-slate-700 flex justify-between items-center">
+                                            <h3 className="font-bold text-white text-sm">Activity</h3>
+                                            <button onClick={markAllAsRead} className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold uppercase tracking-tighter cursor-pointer underline-offset-2">
+                                                Mark All Read
                                             </button>
-                                        )}
-                                    </div>
-                                    <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                                        {notifications.length > 0 ? (
-                                            notifications.map((n) => (
-                                                <div 
-                                                    key={n._id} 
-                                                    onClick={() => handleNotificationClick(n)}
-                                                    className={`px-4 py-4 border-b last:border-0 cursor-pointer hover:bg-slate-50 transition-colors flex gap-3 ${!n.isRead ? 'bg-blue-50/50 border-l-4 border-l-blue-500' : ''}`}
-                                                >
-                                                    <div className="mt-1 flex-shrink-0">
-                                                        {n.type === 'ANNOUNCEMENT' ? <Megaphone size={16} className="text-amber-500" /> : <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />}
-                                                    </div>
-                                                    <div className="flex-grow min-w-0">
-                                                        {n.title && <div className="text-[11px] font-bold text-blue-600 uppercase mb-0.5 truncate">{n.title}</div>}
-                                                        <div className={`text-xs line-clamp-2 ${!n.isRead ? 'font-semibold text-slate-900' : 'text-slate-600'}`} dangerouslySetInnerHTML={{ __html: n.content }} />
-                                                        <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-400 italic">
-                                                            <span>{new Date(n.createdAt).toLocaleDateString()}</span>
-                                                            {n.sender && <span className="flex items-center gap-1">• by {n.sender.firstName}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="px-4 py-10 text-center text-gray-400 text-xs">No notifications yet</div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                                        </div>
+                                        <div className="max-h-96 overflow-y-auto custom-scrollbar bg-slate-900">
+                                            {notifications.length > 0 ? (
+                                                notifications.map((n) => (
+                                                    <NotificationItem key={n._id} n={n} onClick={handleNotificationClick} />
+                                                ))
+                                            ) : (
+                                                <div className="p-10 text-center text-slate-500 text-xs italic">No new alerts</div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Profile Dropdown */}
+                        {/* PROFILE */}
                         <div className="relative" ref={profileRef}>
-                            <button className="font-bold py-1 px-3 flex items-center gap-2 cursor-pointer group" onClick={toggleProfileDropdown}>
-                                <img
-                                    src={getAvatarSrc(user)}
-                                    alt={`${user?.firstName} profile`}
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-slate-700 group-hover:border-yellow-400 transition-all"
-                                />
-                                <span className='text-yellow-400 group-hover:text-yellow-300 transition-colors'>{user?.firstName || 'Profile'}</span>
+                            <button 
+                                onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); setIsChatOpen(false); }}
+                                className="flex items-center gap-2 pl-1 pr-3 py-1 bg-slate-800 border border-slate-700 rounded-full hover:border-slate-500 transition-all group cursor-pointer"
+                            >
+                                <img src={getAvatarSrc(user)} alt="avatar" className="w-8 h-8 rounded-full border border-slate-600" />
+                                <span className='text-sm font-bold text-slate-200 group-hover:text-white hidden sm:inline'>{user?.firstName}</span>
                             </button>
-                            {showProfile && (
-                                <div className={`absolute right-0 mt-2 w-44 bg-white border border-slate-200 shadow-xl z-50 text-sm rounded-lg overflow-hidden transition-all duration-200 ${isProfileOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-                                    <ul className="py-1">
-                                        <li><Link to="/profile" className="block px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-yellow-600">My Profile</Link></li>
-                                        <li><Link to="/my-learning" className="block px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-yellow-600">My Learnings</Link></li>
-                                        {hasPermission('grade:assignments') && (
-                                            <li><Link to={hasRole('student') ? "/student/grades" : "/grades"} className="block px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-yellow-600">Grade</Link></li>
-                                        )}
-                                        {hasPermission('view:calendar') && (
-                                            <li><Link to="/calendar" className="block px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-yellow-600">Calendar</Link></li>
-                                        )}
-                                        {hasPermission('admin:settings') && (
-                                            <li><Link to="/admin/settings" className="block px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-yellow-600">Admin Settings</Link></li>
-                                        )}
-                                        <li className="border-t border-slate-100">
-                                            <button onClick={handleLogoutClick} className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-colors">Logout</button>
-                                        </li>
-                                    </ul>
-                                </div>
-                            )}
+
+                            <AnimatePresence>
+                                {isProfileOpen && (
+                                    <motion.div 
+                                        variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+                                        className="absolute right-0 mt-4 w-56 bg-slate-800 border border-slate-700 shadow-2xl z-50 rounded-2xl overflow-hidden origin-top-right"
+                                    >
+                                        <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+                                            <p className="text-white font-bold text-sm truncate">{user?.firstName} {user?.lastName}</p>
+                                            <p className="text-slate-500 text-[10px] uppercase tracking-widest">{user?.roleName || 'Member'}</p>
+                                        </div>
+                                        <ul className="p-2">
+                                            <ProfileLink to="/profile" icon={<User size={14}/>} label="My Profile" />
+                                            <ProfileLink to="/my-learning" icon={<BookOpen size={14}/>} label="My Learning" />
+                                            {hasPermission('view:calendar') && <ProfileLink to="/calendar" icon={<Calendar size={14}/>} label="Schedule" />}
+                                            {hasPermission('admin:settings') && <ProfileLink to="/admin/settings" icon={<ShieldCheck size={14}/>} label="Admin Panel" />}
+                                            <li className="mt-2 pt-2 border-t border-slate-700">
+                                                <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-all text-sm font-medium">
+                                                    <IoLogOutOutline size={18} /> Logout
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </>
                 )}
@@ -263,5 +246,29 @@ const Subnavbar = ({ setIsSidebarOpen, onLogout }) => {
         </nav>
     );
 };
+
+// Sub-components for cleaner code
+const ProfileLink = ({ to, icon, label }) => (
+    <li>
+        <Link to={to} className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition-all text-sm font-medium">
+            <span className="text-slate-500">{icon}</span> {label}
+        </Link>
+    </li>
+);
+
+const NotificationItem = ({ n, onClick }) => (
+    <div 
+        onClick={() => onClick(n)}
+        className={`px-4 py-4 border-b border-slate-800 hover:bg-slate-800 transition-colors flex gap-3 ${!n.isRead ? 'bg-cyan-500/5 border-l-2 border-l-cyan-500' : ''}`}
+    >
+        <div className="shrink-0 pt-1">
+            {n.type === 'ANNOUNCEMENT' ? <Megaphone size={14} className="text-amber-400" /> : <div className="w-2 h-2 rounded-full bg-cyan-500 mt-1" />}
+        </div>
+        <div className="flex-grow min-w-0">
+            <p className={`text-xs ${!n.isRead ? 'text-white font-bold' : 'text-slate-400'}`} dangerouslySetInnerHTML={{ __html: n.content }} />
+            <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">{new Date(n.createdAt).toLocaleDateString()}</p>
+        </div>
+    </div>
+);
 
 export default Subnavbar;

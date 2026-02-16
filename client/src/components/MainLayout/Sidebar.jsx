@@ -1,368 +1,268 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MdSpaceDashboard } from "react-icons/md";
 import { Link, useLocation } from 'react-router-dom';
 import { PiFilePlusFill } from "react-icons/pi";
-import { FaUser, FaServer } from "react-icons/fa6";
+import { FaUser, FaServer, FaGraduationCap, FaBook } from "react-icons/fa6";
 import { RiAdminLine, RiBookMarkedFill } from "react-icons/ri";
-import { AiOutlineCaretDown, AiOutlineCaretUp } from "react-icons/ai";
+import { AiOutlineCaretDown } from "react-icons/ai";
 import { IoHomeOutline, IoBookOutline, IoListOutline } from "react-icons/io5";
 import { TiStarFullOutline } from 'react-icons/ti';
 import { HiOutlineUserGroup } from 'react-icons/hi';
 import { TbBasketCode } from "react-icons/tb";
-import { FaGraduationCap, FaQuestionCircle, FaBook } from "react-icons/fa";
 import UserContext from '../UserContext/UserContext';
+import { FaQuestionCircle } from 'react-icons/fa';
 
 const Sidebar = ({ isSidebarOpen, toggleSidebar, onSidebarHoverChange }) => {
     const { user, hasRole, hasPermission } = useContext(UserContext);
     const location = useLocation();
 
+    // Section Toggle States
     const [isLearningOpen, setIsLearningOpen] = useState(true);
-    const [isUserSettingOpen, setIsUserSettingOpen] = useState(true);
-    const [isCourseContentManagementOpen, setIsCourseContentManagementOpen] = useState(true);
-
-    const toggleLearning = () => setIsLearningOpen(!isLearningOpen);
-    const toggleUserSetting = () => setIsUserSettingOpen(!isUserSettingOpen);
-    const toggleCourseContentManagement = () => setIsCourseContentManagementOpen(!isCourseContentManagementOpen);
-
-    const getMainDashboardLink = () => {
-        if (hasRole('admin')) return '/admin/dashboard';
-        if (hasRole('teacher')) return '/teacher/dashboard';
-        // 🚨 IMPORTANT: Change the student dashboard link here to the new target
-        if (hasRole('student')) return '/my-learning'; 
-        return '/dashboard';
-    };
-
-    const getMainDashboardTitle = () => {
-        if (hasRole('admin')) return 'Admin Dashboard';
-        if (hasRole('teacher')) return 'Teacher Dashboard';
-        if (hasRole('student')) return 'Student Dashboard'; // Updated title for clarity
-        return 'Dashboard';
-    };
-
-    // ... (rest of the state and helper functions remain the same)
-
-    const canAccessCourseContentManagementSection = (
-        hasPermission('course:update') || hasPermission('course:delete') ||
-        hasPermission('lesson_content:update') || hasPermission('lesson_content:delete') ||
-        hasPermission('question:update') || hasPermission('question:delete') ||
-        hasPermission('category:update') || hasPermission('category:delete') || hasPermission('category:read:all') ||
-        hasPermission('subject:update') || hasPermission('subject:delete') || hasPermission('subject:read:all') ||
-        hasPermission('quiz:update') || hasPermission('quiz:read:all') || hasPermission('quiz:create') ||
-        hasPermission('module:read:all') || hasPermission('module:update') || hasPermission('module:delete')
-    );
-
-    const canAccessUserSettingSection = (
-        hasPermission('user:read:all') ||
-        hasPermission('user:delete') ||
-        hasPermission('role:update') || hasPermission('role:delete') || hasPermission('role:read:all') ||
-        hasPermission('permission:update') || hasPermission('permission:delete') || hasPermission('permission:read:all')
-    );
+    const [isUserSettingOpen, setIsUserSettingOpen] = useState(false);
+    const [isCourseContentManagementOpen, setIsCourseContentManagementOpen] = useState(false);
 
     const [isLocallyHovered, setIsLocallyHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const checkIsMobile = () => {
-            setIsMobile(window.innerWidth < 1024);
-        };
-
+        const checkIsMobile = () => setIsMobile(window.innerWidth < 1024);
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
-
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
     const handleMouseEnter = () => {
         if (!isMobile) {
             setIsLocallyHovered(true);
-            if (onSidebarHoverChange) {
-                onSidebarHoverChange(true);
-            }
+            onSidebarHoverChange?.(true);
         }
     };
 
     const handleMouseLeave = () => {
         if (!isMobile) {
             setIsLocallyHovered(false);
-            if (onSidebarHoverChange) {
-                onSidebarHoverChange(false);
-            }
+            onSidebarHoverChange?.(false);
         }
     };
 
-    const currentSidebarWidth = (isSidebarOpen || isLocallyHovered) ? 'w-64' : 'w-20';
-    const currentPadding = (isSidebarOpen || isLocallyHovered) ? 'px-3' : 'px-2';
-    const shouldShowTextAndCaret = isSidebarOpen || (!isMobile && isLocallyHovered);
-    const baseLiClasses = 'relative py-2 rounded-lg text-sm font-bold tracking-wide transition-colors duration-200 cursor-pointer';
-    const baseLinkClasses = `flex items-center gap-4 w-full h-full p-2 rounded-lg ${!shouldShowTextAndCaret ? 'justify-center' : ''}`;
-    const iconClasses = 'w-5 h-5 flex-shrink-0';
-    const subLinkClasses = `flex items-center gap-3 w-full h-full p-2 rounded-lg text-sm ${!shouldShowTextAndCaret ? 'justify-center' : ''}`;
-    const subIconClasses = 'w-4 h-4 flex-shrink-0';
+    const isExpanded = isSidebarOpen || (!isMobile && isLocallyHovered);
+    const currentSidebarWidth = isExpanded ? 'w-64' : 'w-20';
 
-    // 🚨 UPDATED: Check for active state in the MY LEARNING section
-    const isActiveLink = (path) => {
-        if (path === getMainDashboardLink() && location.pathname === getMainDashboardLink()) return true;
-        if (path === '/') return location.pathname === path;
-        return location.pathname.startsWith(path);
-    };
-    
-    // Helper to check if the 'MY LEARNING' section should be highlighted/open
+    const isActiveLink = (path) => location.pathname.startsWith(path);
     const isMyLearningActive = isActiveLink('/my-learning') || isActiveLink('/courses');
 
-
-    const getToggleItemClasses = (isOpen, pathPrefix) => {
-        // Use isMyLearningActive only for the MY LEARNING section toggle button
-        const isActive = pathPrefix === '/my-learning' ? isMyLearningActive : isActiveLink(pathPrefix);
-        const itemPaddingClass = shouldShowTextAndCaret ? 'px-3' : 'px-2';
-        return `${baseLiClasses} ${itemPaddingClass} group text-gray-200 hover:bg-slate-700 hover:text-white ${isOpen || isActive ? 'bg-slate-700 text-white' : ''} ${!shouldShowTextAndCaret ? 'tooltip tooltip-right' : ''}`;
+    const getMainDashboardLink = () => {
+        if (hasRole('admin')) return '/admin/dashboard';
+        if (hasRole('teacher')) return '/teacher/dashboard';
+        return '/my-learning';
     };
 
-    const getSubmenuLinkClasses = (path) => {
-        const isActive = location.pathname === path; // Check for exact match for sub-links
-        return `${subLinkClasses} text-gray-400 hover:text-white hover:bg-slate-800 ${isActive ? 'bg-slate-800 text-white' : ''}`;
-    };
-
-    const getIconColorClasses = (isItemActive, isToggleOpen, defaultColorClass, hoverColorClass) => {
-        return `${defaultColorClass} group-hover:${hoverColorClass} ${isItemActive || isToggleOpen ? hoverColorClass : ''}`;
-    };
-
-    // Helper function to determine the avatar source
     const getAvatarSrc = (user) => {
-        if (user?.avatar && typeof user.avatar === 'string' && user.avatar.startsWith('http')) {
-            return user.avatar;
-        }
-        return `https://ui-avatars.com/api/?name=${user?.firstName || 'U'}+${user?.lastName || 'U'}&background=random&color=fff&size=96`;
+        return user?.avatar || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=0D9488&color=fff`;
     };
 
-    // Determine if the user is Admin or Teacher (requires Dashboard link)
-    const isAdminOrTeacher = hasRole('admin') || hasRole('teacher');
-    
-    // Determine if the user is a student (uses the /my-learning link as dashboard)
-    const isStudent = hasRole('student');
+    // Permission check for the entire Management block
+    const canAccessCourseContentManagementSection = (
+        hasPermission('course:update') || hasPermission('course:delete') ||
+        hasPermission('module:read:all') || hasPermission('lesson_content:update') ||
+        hasPermission('quiz:update') || hasPermission('question:update') ||
+        hasPermission('category:read:all') || hasPermission('subject:read:all')
+    );
 
     return (
         <>
-            {isMobile && isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
-                    onClick={toggleSidebar}
-                ></div>
-            )}
+            {/* Mobile Overlay */}
+            <AnimatePresence>
+                {isMobile && isSidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 lg:hidden"
+                        onClick={toggleSidebar}
+                    />
+                )}
+            </AnimatePresence>
 
-            <section
-                className={`
-                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:translate-x-0
-                    ${currentSidebarWidth} ${currentPadding}
-                    bg-slate-900 fixed h-full py-2 transition-all duration-300 z-20 flex flex-col
-                    ${isMobile ? 'inset-y-0 left-0' : ''}
-                `}
+            <aside
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
+                className={`fixed left-0 top-0 h-full z-50 bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out flex flex-col ${currentSidebarWidth}`}
             >
-                <div className={`my-1 mb-1 ${!shouldShowTextAndCaret ? 'flex justify-center' : ''}`}>
-                    <h1 className={`text-lg text-gray-50 font-bold uppercase m-2 flex items-center gap-x-4 font-primary
-                                    ${!shouldShowTextAndCaret ? 'justify-center' : ''}`}>
-                        <MdSpaceDashboard className='w-8 h-8 text-yellow-400' />
-                        {shouldShowTextAndCaret && getMainDashboardTitle()}
-                    </h1>
+                {/* Header / Logo Area */}
+                <div className="h-20 flex items-center px-6 gap-4 overflow-hidden border-b border-slate-800/50">
+                    <MdSpaceDashboard className="w-8 h-8 text-cyan-400 shrink-0" />
+                    <AnimatePresence>
+                        {isExpanded && (
+                            <motion.span 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="text-white font-black tracking-tighter text-lg whitespace-nowrap"
+                            >EduGlobal
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </div>
-                <hr className='border-slate-700' />
 
-                <ul className={`my-2 ${shouldShowTextAndCaret ? 'mx-3' : 'mx-0'} font-secondary space-y-2 flex-grow`}>
+                {/* Navigation Menu */}
+                <nav className="flex-grow overflow-y-auto custom-scrollbar py-6 px-3 space-y-2">
                     
-                    {/* DASHBOARD LINK - ONLY SHOWN for Admin/Teacher */}
-                    {isAdminOrTeacher && (
-                        <li className={`${getToggleItemClasses(false, getMainDashboardLink())}`}
-                            data-tip={!shouldShowTextAndCaret ? "Dashboard" : ""}>
-                            <Link to={getMainDashboardLink()} className={baseLinkClasses} onClick={isMobile ? toggleSidebar : undefined}>
-                                <IoHomeOutline className={`${iconClasses} ${getIconColorClasses(isActiveLink(getMainDashboardLink()), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                {shouldShowTextAndCaret && "DASHBOARD"}
-                            </Link>
-                        </li>
+                    {/* Dashboard */}
+                    {(hasRole('admin') || hasRole('teacher')) && (
+                        <SidebarItem 
+                            to={getMainDashboardLink()}
+                            icon={<IoHomeOutline />}
+                            label="DASHBOARD"
+                            active={location.pathname === getMainDashboardLink()}
+                            expanded={isExpanded}
+                        />
                     )}
 
-                    {/* MY LEARNING SECTION - Shows if the user has 'course:read' permission (Students and Admins/Teachers who need to see it) */}
+                    {/* My Learning */}
                     {hasPermission('course:read') && (
-                        <>
-                            {/* The Parent Toggle remains a button */}
-                            <li className={getToggleItemClasses(isLearningOpen, '/my-learning')} onClick={toggleLearning}
-                                data-tip={!shouldShowTextAndCaret ? "My Learning" : ""}>
-                                <div className='flex items-center justify-between w-full'>
-                                    <div className={`flex items-center gap-4 ${!shouldShowTextAndCaret ? 'justify-center w-full' : ''}`}>
-                                        <IoBookOutline className={`${iconClasses} ${getIconColorClasses(isMyLearningActive, isLearningOpen, 'text-gray-400', 'text-yellow-300')}`} />
-                                        {shouldShowTextAndCaret && <span>MY LEARNING</span>}
-                                    </div>
-                                    {shouldShowTextAndCaret && <AiOutlineCaretUp className={`text-gray-400 group-hover:text-yellow-300 ${isLearningOpen ? 'rotate-0' : 'rotate-180'}`} />}
-                                </div>
-                            </li>
-                            {isLearningOpen && shouldShowTextAndCaret && (
-                                <ul className='ml-6 mt-2 space-y-1'>
-                                    {/* 🏆 NEW LINK: My Progress / Student Dashboard */}
-                                    <li>
-                                        <Link to='/my-learning' className={getSubmenuLinkClasses('/my-learning')} onClick={isMobile ? toggleSidebar : undefined}>
-                                            <RiBookMarkedFill className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/my-learning'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                            My Learning Progress
-                                        </Link>
-                                    </li>
-                                    
-                                    {/* EXISTING LINK: All Courses (Now a sibling under the parent) */}
-                                    {hasPermission('course:read:all') && ( // Use the correct permission if different from 'course:read'
-                                        <li>
-                                            <Link to='/courses' className={getSubmenuLinkClasses('/courses')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <FaGraduationCap className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/courses'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                All Courses
-                                            </Link>
-                                        </li>
-                                    )}
-                                </ul>
-                            )}
-                        </>
+                        <SidebarGroup 
+                            icon={<IoBookOutline />}
+                            label="MY LEARNING"
+                            expanded={isExpanded}
+                            isOpen={isLearningOpen}
+                            active={isMyLearningActive}
+                            onClick={() => setIsLearningOpen(!isLearningOpen)}
+                        >
+                            <SidebarSubItem to="/my-learning" label="Learning Progress" icon={<RiBookMarkedFill />} />
+                            <SidebarSubItem to="/courses" label="All Courses" icon={<FaGraduationCap />} />
+                        </SidebarGroup>
                     )}
 
-                    {/* USER SETTING SECTION - Shows if the user has ANY of the required User/Role/Permission permissions */}
-                    {canAccessUserSettingSection && (
-                        <>
-                            <li className={getToggleItemClasses(isUserSettingOpen, '/user-management')} onClick={toggleUserSetting}
-                                data-tip={!shouldShowTextAndCaret ? "User Setting" : ""}>
-                                <div className='flex items-center justify-between w-full'>
-                                    <div className={`flex items-center gap-4 ${!shouldShowTextAndCaret ? 'justify-center w-full' : ''}`}>
-                                        <HiOutlineUserGroup className={`${iconClasses} ${getIconColorClasses(isActiveLink('/user-management'), isUserSettingOpen, 'text-gray-400', 'text-yellow-300')}`} />
-                                        {shouldShowTextAndCaret && <span>USER SETTING</span>}
-                                    </div>
-                                    {shouldShowTextAndCaret && <AiOutlineCaretUp className={`text-gray-400 group-hover:text-yellow-300 ${isUserSettingOpen ? 'rotate-0' : 'rotate-180'}`} />}
-                                </div>
-                            </li>
-                            {isUserSettingOpen && shouldShowTextAndCaret && (
-                                <ul className='ml-6 mt-2 space-y-1'>
-                                    {hasPermission('user:read:all') && (
-                                        <li>
-                                            <Link to='/user-management' className={getSubmenuLinkClasses('/user-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <FaUser className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/user-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                User Management
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {hasPermission('role:read:all') && (
-                                        <li>
-                                            <Link to='/roles' className={getSubmenuLinkClasses('/roles')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <FaServer className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/roles'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Roles Management
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {hasPermission('permission:read:all') && (
-                                        <li>
-                                            <Link to='/permissions' className={getSubmenuLinkClasses('/permissions')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <TbBasketCode className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/permissions'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Permission Types
-                                            </Link>
-                                        </li>
-                                    )}
-                                </ul>
-                            )}
-                        </>
+
+                    {/* User Settings */}
+                    {(hasPermission('user:read:all') || hasPermission('role:read:all')) && (
+                        <SidebarGroup 
+                            icon={<HiOutlineUserGroup />}
+                            label="USER SETTINGS"
+                            expanded={isExpanded}
+                            isOpen={isUserSettingOpen}
+                            active={isActiveLink('/user-management') || isActiveLink('/roles')}
+                            onClick={() => setIsUserSettingOpen(!isUserSettingOpen)}
+                        >
+                            <SidebarSubItem to="/user-management" label="User Management" icon={<FaUser />} />
+                            <SidebarSubItem to="/roles" label="Roles Management" icon={<FaServer />} />
+                            <SidebarSubItem to="/permissions" label="Permission Types" icon={<TbBasketCode />} />
+                        </SidebarGroup>
                     )}
 
-                    {/* COURSE CONTENT MANAGEMENT SECTION - Shows if the user has ANY of the required Course Content permissions */}
+                     {/* Management Section (The restored section) */}
                     {canAccessCourseContentManagementSection && (
-                        <>
-                            <li className={getToggleItemClasses(isCourseContentManagementOpen, '/courses-list')} onClick={toggleCourseContentManagement}
-                                data-tip={!shouldShowTextAndCaret ? "Course Content" : ""}>
-                                <div className='flex items-center justify-between w-full'>
-                                    <div className={`flex items-center gap-4 ${!shouldShowTextAndCaret ? 'justify-center w-full' : ''}`}>
-                                        <RiAdminLine className={`${iconClasses} ${getIconColorClasses(isActiveLink('/courses-list'), isCourseContentManagementOpen, 'text-gray-400', 'text-yellow-300')}`} />
-                                        {shouldShowTextAndCaret && <span>COURSE CONTENT</span>}
-                                    </div>
-                                    {shouldShowTextAndCaret && <AiOutlineCaretUp className={`text-gray-400 group-hover:text-yellow-300 ${isCourseContentManagementOpen ? 'rotate-0' : 'rotate-180'}`} />}
-                                </div>
-                            </li>
-                            {isCourseContentManagementOpen && shouldShowTextAndCaret && (
-                                <ul className='ml-6 mt-2 space-y-1'>
-                                    {(hasPermission('course:update') || hasPermission('course:delete')) && (
-                                        <li>
-                                            <Link to='/courses-list' className={getSubmenuLinkClasses('/courses-list')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <FaGraduationCap className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/courses-list'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Manage All Courses
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {(hasPermission('module:read:all')) && (
-                                        <li>
-                                            <Link to='/lesson-module-management' className={getSubmenuLinkClasses('/lesson-module-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <RiBookMarkedFill className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/lesson-module-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Lesson Module Management
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {(hasPermission('lesson_content:update') || hasPermission('lesson_content:delete') || hasPermission('lesson_content:read:all')) && (
-                                        <li>
-                                            <Link to='/lesson-content-management' className={getSubmenuLinkClasses('/lesson-content-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <PiFilePlusFill className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/lesson-content-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Lesson Content Bank
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {(hasPermission('quiz:update') || hasPermission('quiz:read:all') || hasPermission('quiz:create')) && (
-                                        <li>
-                                            <Link to='/quiz-management' className={getSubmenuLinkClasses('/quiz-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <IoListOutline className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/quiz-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Quiz Module Management
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {(hasPermission('question:update') || hasPermission('question:delete') || hasPermission('question:read:all')) && (
-                                        <li>
-                                            <Link to='/question-bank-management' className={getSubmenuLinkClasses('/question-bank-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <FaQuestionCircle className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/question-bank-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Question Bank
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {(hasPermission('category:update') || hasPermission('category:delete') || hasPermission('category:read:all')) && (
-                                        <li>
-                                            <Link to='/category-management' className={getSubmenuLinkClasses('/category-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <TiStarFullOutline className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/category-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Categories
-                                            </Link>
-                                        </li>
-                                    )}
-                                    {(hasPermission('subject:update') || hasPermission('subject:delete') || hasPermission('subject:read:all')) && (
-                                        <li>
-                                            <Link to='/subject-management' className={getSubmenuLinkClasses('/subject-management')} onClick={isMobile ? toggleSidebar : undefined}>
-                                                <FaBook className={`${subIconClasses} ${getIconColorClasses(isActiveLink('/subject-management'), false, 'text-gray-400', 'text-yellow-300')}`} />
-                                                Subjects
-                                            </Link>
-                                        </li>
-                                    )}
-                                </ul>
+                        <SidebarGroup 
+                            icon={<RiAdminLine />}
+                            label="COURSE CONTENT"
+                            expanded={isExpanded}
+                            isOpen={isCourseContentManagementOpen}
+                            active={isActiveLink('/courses-list') || isActiveLink('/lesson-module')}
+                            onClick={() => setIsCourseContentManagementOpen(!isCourseContentManagementOpen)}
+                        >
+                            {(hasPermission('course:update') || hasPermission('course:delete')) && (
+                                <SidebarSubItem to="/courses-list" label="Manage Courses" icon={<FaGraduationCap />} />
                             )}
-                        </>
+                            {hasPermission('module:read:all') && (
+                                <SidebarSubItem to="/lesson-module-management" label="Lesson Modules" icon={<RiBookMarkedFill />} />
+                            )}
+                            {(hasPermission('lesson_content:update') || hasPermission('lesson_content:delete')) && (
+                                <SidebarSubItem to="/lesson-content-management" label="Content Bank" icon={<PiFilePlusFill />} />
+                            )}
+                            {(hasPermission('quiz:update') || hasPermission('quiz:read:all')) && (
+                                <SidebarSubItem to="/quiz-management" label="Quiz Modules" icon={<IoListOutline />} />
+                            )}
+                            {(hasPermission('question:update') || hasPermission('question:delete')) && (
+                                <SidebarSubItem to="/question-bank-management" label="Question Bank" icon={<FaQuestionCircle />} />
+                            )}
+                            {(hasPermission('category:update') || hasPermission('category:read:all')) && (
+                                <SidebarSubItem to="/category-management" label="Categories" icon={<TiStarFullOutline />} />
+                            )}
+                            {(hasPermission('subject:update') || hasPermission('subject:read:all')) && (
+                                <SidebarSubItem to="/subject-management" label="Subjects" icon={<FaBook />} />
+                            )}
+                        </SidebarGroup>
                     )}
-                </ul>
 
-                {/* USER PROFILE CARD */}
-                {user && (
-                    <div className={`mt-auto mb-4 p-3 rounded-lg bg-slate-800 text-gray-200 transition-all duration-300
-                                    ${shouldShowTextAndCaret ? 'text-left' : 'text-center'}`}>
-                        {shouldShowTextAndCaret ? (
-                            <>
-                                <p className="font-semibold text-sm">{user.firstName} {user.lastName}</p>
-                                <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                            </>
-                        ) : (
-                            <div className="flex justify-center items-center h-full">
-                                <img
-                                    src={getAvatarSrc(user)}
-                                    alt={`${user?.firstName}'s avatar`}
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-yellow-300"
-                                />
+                </nav>
+
+                {/* Profile Card */}
+                <div className="p-4 border-t border-slate-800">
+                    <div className={`flex items-center gap-3 p-2 rounded-2xl bg-slate-800/50 backdrop-blur-md transition-all duration-300 ${!isExpanded ? 'justify-center' : ''}`}>
+                        <img 
+                            src={getAvatarSrc(user)} 
+                            className="w-10 h-10 rounded-xl border-2 border-cyan-500/20 object-cover" 
+                            alt="Avatar" 
+                        />
+                        {isExpanded && (
+                            <div className="overflow-hidden">
+                                <p className="text-white text-sm font-bold truncate">{user?.firstName} {user?.lastName}</p>
+                                <p className="text-slate-500 text-[10px] uppercase tracking-widest">{user?.roleName || 'Student'}</p>
                             </div>
                         )}
                     </div>
-                )}
-            </section>
+                </div>
+            </aside>
         </>
+    );
+};
+
+/* --- Sub-Components for Cleanliness --- */
+
+const SidebarItem = ({ to, icon, label, active, expanded }) => (
+    <Link to={to} className={`
+        group flex items-center gap-4 p-3 rounded-xl transition-all duration-200
+        ${active ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+        ${!expanded ? 'justify-center' : ''}
+    `}>
+        <span className={`text-xl ${active ? 'text-slate-950' : 'group-hover:text-cyan-400'}`}>{icon}</span>
+        {expanded && <span className="whitespace-nowrap font-bold tracking-tight">{label}</span>}
+    </Link>
+);
+
+const SidebarGroup = ({ icon, label, expanded, isOpen, active, onClick, children }) => (
+    <div className="space-y-1">
+        <button onClick={onClick} className={`
+            w-full group flex items-center justify-between p-3 rounded-xl transition-all duration-200
+            ${active && !isOpen ? 'text-cyan-400 bg-slate-800/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+            ${!expanded ? 'justify-center' : ''}
+        `}>
+            <div className="flex items-center gap-4">
+                <span className={`text-xl ${active ? 'text-cyan-400' : 'group-hover:text-cyan-400'}`}>{icon}</span>
+                {expanded && <span className="font-bold tracking-tight whitespace-nowrap">{label}</span>}
+            </div>
+            {expanded && (
+                <AiOutlineCaretDown className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-cyan-400' : ''}`} />
+            )}
+        </button>
+        {expanded && (
+            <motion.div 
+                initial={false}
+                animate={isOpen ? "open" : "closed"}
+                variants={{
+                    open: { height: "auto", opacity: 1, display: "block", transition: { duration: 0.3 } },
+                    closed: { height: 0, opacity: 0, transitionEnd: { display: "none" }, transition: { duration: 0.2 } }
+                }}
+                className="ml-6 space-y-1 overflow-hidden"
+            >
+                {children}
+            </motion.div>
+        )}
+    </div>
+);
+
+const SidebarSubItem = ({ to, label, icon }) => {
+    const location = useLocation();
+    const active = location.pathname === to;
+    return (
+        <Link to={to} className={`
+            flex items-center gap-3 p-2.5 rounded-lg text-sm transition-all
+            ${active ? 'text-cyan-400 bg-cyan-400/5 font-bold' : 'text-slate-500 hover:text-white hover:bg-slate-800/50'}
+        `}>
+            <span className="text-lg">{icon}</span>
+            <span className="whitespace-nowrap">{label}</span>
+        </Link>
     );
 };
 

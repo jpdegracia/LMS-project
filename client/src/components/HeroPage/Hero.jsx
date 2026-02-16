@@ -59,15 +59,15 @@ const Hero = () => {
             </motion.span>
 
             {/* Main Headings */}
-            <motion.div variants={itemVariants} className="space-y-2">
+             <motion.div variants={itemVariants} className="space-y-2">
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
-                Exciting, <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">learning</span> must be
+                Excellence <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">defined</span> by results.
               </h1>
               <h2 className="text-2xl md:text-4xl text-slate-300 font-light italic">
-                Excitement, when new learning applied
+                Bridging the gap between ambition and achievement.
               </h2>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white">
-                Excited, when at <span className="text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">Edu Global!</span>
+                Your future starts at <span className="text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">Edu Global!</span>
               </h1>
             </motion.div>
 
